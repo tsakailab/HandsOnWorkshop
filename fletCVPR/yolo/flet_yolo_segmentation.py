@@ -31,8 +31,7 @@ def set_page(page, PageOpts):
 
 
 # defaults
-detector_params = {'modelname': "yolov8n", 'imgsz': args['resolution'][1], 'conf': 0.25, 'iou': 0.7}
-#detector_params = {'modelname': "yolov8n-seg", 'imgsz': 960, 'conf': 0.25, 'iou': 0.7}
+detector_params = {'modelname': "yolov8n-seg", 'imgsz': args['resolution'][1], 'conf': 0.25, 'iou': 0.7}
 drawer_opts = {}
 section_opts = {'img_size': args['resolution'], 'bottom_margin': 40, 'elevation': 20, 'padding':10, 'text_size': 20, 'border_radius': 20}
 
