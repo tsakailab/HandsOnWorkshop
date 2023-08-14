@@ -7,8 +7,8 @@ from matplotlib.colors import TwoSlopeNorm as tsn
 import matplotlib.pyplot as plt
 from time import sleep
 
-
-args = {'table_size': (8, 8), 'cell_size': 50, 'colormap': plt.cm.bwr, 'font_size': 36, 'pixs': 20,
+args = {'app': {}, #{'view': ft.WEB_BROWSER},
+        'table_size': (8, 8), 'cell_size': 50, 'colormap': plt.cm.bwr, 'font_size': 36, 'pixs': 20,
         'INEQULALITY': ["<", ">"], 'GOOD_BAD': ["Good", " ", "Bad"]}
 
 PageOpts = {'TITLE': "Pixel Perceptron Challenge", 
@@ -302,5 +302,5 @@ def main(page: ft.Page):
         vertical_alignment=ft.CrossAxisAlignment.START)
     )
 
-ft.app(target=main)
+ft.app(target=main, **args['app'])
 #ft.app(target=main, view=ft.WEB_BROWSER)
