@@ -7,9 +7,10 @@ from ultralytics import YOLO
 resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,1024), 
           'HD': (720,1280), 'FWXGA': (768,1366), 'HD+': (900,1600), 'FHD': (1080,1920)}
 
-args = {'resolusion': resols['qHD'], 'padding': 10}
+args = {'app': {}, #{'view': ft.WEB_BROWSER},
+        'resolusion': resols['qHD'], 'padding': 10}
 
-PageOpts = {'TITLE': "Object Detection (YOLOv8)", 
+PageOpts = {'TITLE': "Object Segmentation (YOLOv8)", 
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': args['padding'],
@@ -250,7 +251,6 @@ def main(page: ft.Page):
     #page.on_disconnect(caprelease)
 
 if __name__ == '__main__':
-    ft.app(target=main)
-    #ft.app(target=main, view=ft.WEB_BROWSER)
+    ft.app(target=main, **args['app'])
     cap.release()
     cv2.destroyAllWindows()
