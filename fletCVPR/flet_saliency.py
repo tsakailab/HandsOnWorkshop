@@ -10,7 +10,7 @@ from util.flet_util import set_page
 resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,1024), 
           'HD': (720,1280), 'FWXGA': (768,1366), 'HD+': (900,1600), 'FHD': (1080,1920)}
 
-args = {'app': {'view': ft.FLET_APP}, #{'view': ft.WEB_BROWSER},
+args = {'app':{}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
         'resolution': resols['qHD'], 'padding': 10, 
         'images': None}
 args.update({'images': ['dashcam.jpg', 'park.jpg']}) # works if cap.isOpened() is False
@@ -108,13 +108,15 @@ class Drawer():
 
         frame = bgr
         if self.bblend:
-            frame = (frame * (sal / 255.0)[..., None]).astype(np.uint8)
+            #frame = (frame * (sal / 255.0)[..., None]).astype(np.uint8)
+            frame = np.clip((frame**1.1) * (sal / 255.0)[..., None], 0, 255).astype(np.uint8)
             if self.bbinary:
                 frame = (frame * mask[..., None]).astype(np.uint8)
+                #frame = np.clip((frame**1.1) * mask[..., None], 0, 255).astype(np.uint8)
 
         #return cv2.addWeighted(sal, 0.5, bgr, 0.5, 0)
         #return (bgr * (sal / 255.0)[..., None]).astype(np.uint8)
-        return cv2.addWeighted(frame, 0.95, bgr, 0.05, 0)
+        return cv2.addWeighted(frame, 0.90, bgr, 0.10, 0)
  
 
 # macros
@@ -279,7 +281,7 @@ class Section():
                                                on_change=self.set_bblend)
         self.controls['sw_bcont'] = ft.Switch(label="Contour", value=False, label_position=ft.LabelPosition.LEFT,
                                               on_change=self.set_bcont)
-        self.controls['sw_bbinary'] = ft.Switch(label="Binary", value=False, label_position=ft.LabelPosition.LEFT,
+        self.controls['sw_bbinary'] = ft.Switch(label="Mask", value=False, label_position=ft.LabelPosition.LEFT,
                                                 on_change=self.set_bbinary)
         self.controls['sw_bframew'] = ft.Switch(label="Border", value=True, label_position=ft.LabelPosition.LEFT,
                                                 on_change=self.set_bframew)
@@ -301,21 +303,22 @@ class Section():
                         ),
                     )
                 ),
-                # ft.Container(
-                #     bgcolor=ft.colors.WHITE24,
-                #     padding=padding,
-                #     border_radius=ft.border_radius.all(border_radius),
-                #     content=ft.Column([
-                #         ft.Slider(
-                #             min=1, max=99, 
-                #             on_change=lambda e: cap_view.RenewDetector({'conf': e.control.value/100}) #print(e.control.value)
-                #         ),
-                #         # ft.Slider(
-                #         #     min=500, max=900,
-                #         # )
-                #     ]
-                #     ),
-                # )
+                ft.Container(
+                    bgcolor=ft.colors.WHITE24,
+                    padding=self.padding,
+                    border_radius=ft.border_radius.all(self.border_radius),
+                    content=ft.Column([
+                        ft.Slider(
+                            #value=self.controls['cap_view'].imgproc['DETECTOR_PARAMS']['scale'], 
+                            value=10, min=5, max=30, divisions=25, label="scale={value}/100",
+                            on_change=lambda e: self.controls['cap_view'].RenewDetector({'scale': e.control.value/100}), width=400
+                        ),
+                        # ft.Slider(
+                        #     min=500, max=900,
+                        # )
+                    ]
+                    ),
+                )
             ],
                 alignment=ft.MainAxisAlignment.CENTER,
             )
