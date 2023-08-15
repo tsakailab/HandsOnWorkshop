@@ -6,6 +6,11 @@ from sklearn.datasets import load_digits
 from matplotlib.colors import TwoSlopeNorm as tsn
 import matplotlib.pyplot as plt
 from time import sleep
+from util.flet_util import set_page
+
+# from importlib import import_module
+# flet_utils = import_module("flet_utils.py", "..")
+# set_page = flet_utils.set_page
 
 args = {'app': {}, #{'view': ft.WEB_BROWSER},
         'table_size': (8, 8), 'cell_size': 50, 'colormap': plt.cm.bwr, 'font_size': 36, 'pixs': 20,
@@ -16,19 +21,6 @@ PageOpts = {'TITLE': "Pixel Perceptron Challenge",
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': 10,
         'WINDOW_HW': (900, 1400), 'WINDOW_TOP_LEFT': (50,100), '_WINDOW_TOP_LEFT_INCR': False}
-
-def set_page(page, PageOpts):
-    page.title = PageOpts['TITLE']
-    page.theme_mode = PageOpts['THEME_MODE']
-    page.vertical_alignment = PageOpts['VERTICAL_ALIGNMENT']
-    page.horizontal_alignment = PageOpts['HORIZONTAL_ALIGNMENT']
-    page.padding = PageOpts['PADDING']
-    page.window_height, page.window_width = PageOpts['WINDOW_HW']
-    if PageOpts['_WINDOW_TOP_LEFT_INCR']:
-        page.window_top += PageOpts['WINDOW_TOP_LEFT'][0]
-        page.window_left += PageOpts['WINDOW_TOP_LEFT'][1]
-    else:
-        page.window_top, page.window_left = PageOpts['WINDOW_TOP_LEFT']
 
 
 TextFieldOpts = {'height': 2*args['pixs']+8, 'width': 2*args['pixs']-4, 'text_size': 2*args['pixs']-20, 
