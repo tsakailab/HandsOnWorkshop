@@ -10,7 +10,7 @@ resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,
           'HD': (720,1280), 'FWXGA': (768,1366), 'HD+': (900,1600), 'FHD': (1080,1920)}
 
 args = {'app': {}, #{'view': ft.WEB_BROWSER},
-        'resolusion': resols['qHD'], 'padding': 10}
+        'resolution': resols['qHD'], 'padding': 10}
 
 PageOpts = {'TITLE': "Hand Detection (mediapipe)", 
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
