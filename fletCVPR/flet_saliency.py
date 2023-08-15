@@ -6,6 +6,9 @@ from PIL import Image
 from scipy.ndimage import gaussian_filter
 from scipy.fftpack import next_fast_len, fft2, ifft2, fftshift, ifftshift
 from util.flet_util import set_page
+import os
+import warnings
+warnings.filterwarnings('ignore')
 
 resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,1024), 
           'HD': (720,1280), 'FWXGA': (768,1366), 'HD+': (900,1600), 'FHD': (1080,1920)}
@@ -13,6 +16,7 @@ resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,
 args = {'app':{}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
         'resolution': resols['qHD'], 'padding': 10, 
         'images': None}
+#args.update({'images': ['dashcam.jpg', 'park.jpg']}) # works if cap.isOpened() is False
 args.update({'images': ['dashcam.jpg', 'park.jpg']}) # works if cap.isOpened() is False
 
 
@@ -171,10 +175,14 @@ class ftimshow(ft.UserControl):
         self.keep_running = True
 
     def _imread(self):
+        success, bgr = False, None
         if isinstance(self.images, list) and self.capid < len(self.images):
-            success, bgr = True, cv2.imread(self.images[self.capid])
-        else:
-            success, bgr = False, None
+            #success, bgr = True, cv2.imread(self.images[self.capid])
+            success = os.path.isfile(self.images[self.capid])
+            if success:
+                bgr = cv2.imread(self.images[self.capid])
+            else:
+                success, bgr = True, np.zeros((self.hw[0],self.hw[1],3), np.uint8)
         return success, bgr
 
     def did_mount(self):
@@ -183,6 +191,7 @@ class ftimshow(ft.UserControl):
     def update_timer(self):
         fps_timer = fps_counter()
 
+        frame = np.zeros((self.hw[0],self.hw[1],3), np.uint8)
         while self.keep_running:
             if self.cap is not None and self.cap.isOpened():
                 success, frame = self.cap.read()
@@ -230,9 +239,10 @@ class ftimshow(ft.UserControl):
     def SetSource(self, cid):
         self.capid = cid
         if self.images is None:
-            self.cap.release()
-            self.cap = cv2.VideoCapture(cid)
-
+        #if self.cap is not None:
+            if self.cap.isOpened():
+                self.cap.release()
+            self.cap = cv2.VideoCapture(cid)#, cv2.CAP_DSHOW)
 
 
 #### (3/3) Set controlable values by sliders #### 
@@ -338,6 +348,9 @@ import sys
 def main(page: ft.Page):
 
     cap = cv2.VideoCapture(0) if imgproc['IMAGES'] is None else None
+    if len(sys.argv) > 1:
+        args.update({'images': None})
+        cap = cv2.VideoCapture(int(sys.argv[1]))
 
     section = Section(cap, imgproc=imgproc, **section_opts)
     contents = section.create()
