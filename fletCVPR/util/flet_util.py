@@ -92,10 +92,7 @@ class ftImShow(ft.UserControl):
             self.controls[0].src_base64 = self._src_base64
             self.update()
         if not self.keep_running:
-            self._detect_draw()
-            self._src_base64 = bgr_to_base64(self._bgr)
-            self.controls[0].src_base64 = self._src_base64
-            self.update()
+            self.Renew()
 
     def _detect_draw(self):
         if self.cap is not None and self.cap.isOpened():
@@ -104,6 +101,7 @@ class ftImShow(ft.UserControl):
             success, frame = self._imread()
         if not success:
             return
+            #frame = self._bgr
         frame = cv2.resize(frame, (self.hw[1],self.hw[0]))
         if self.mirror:
             frame = cv2.flip(frame, 1)
@@ -122,21 +120,29 @@ class ftImShow(ft.UserControl):
     def build(self):
         return self.controls
 
+    def Renew(self):
+        self._detect_draw()
+        self._src_base64 = bgr_to_base64(self._bgr)
+        self.controls[0].src_base64 = self._src_base64
+        self.update()
+
     def RenewDetector(self, newparam):
         self.imgproc['DETECTOR_PARAMS'].update(newparam)
         self.detector=None
+        #self.detector = self.imgproc['DETECTOR'](**self.imgproc['DETECTOR_PARAMS'])
         return self
 
     def RenewDrawer(self, newparam):
         self.imgproc['DRAWER_OPTS'].update(newparam)
         self.drawer=None
+        #self.drawer = self.imgproc['DRAWER'](**self.imgproc['DRAWER_OPTS'])
         return self
 
     def SetSource(self, cid):
         self.capid = cid
         if self.images is None:
         #if self.cap is not None:
-            if self.cap.isOpened():
+            if self.cap is not None:
                 self.cap.release()
             self.cap = cv2.VideoCapture(cid)#, cv2.CAP_DSHOW)
         return self
