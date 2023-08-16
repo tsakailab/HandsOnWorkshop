@@ -11,7 +11,7 @@ from flet_util import set_page, ftImShow
 resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,1024), 
           'HD': (720,1280), 'FWXGA': (768,1366), 'HD+': (900,1600), 'FHD': (1080,1920)}
 
-args = {'app': {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
+args = {'app': {}, #{'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
         'resolution': resols['qHD'], 'padding': 10, 
         'images': None}
 args.update({'images': ['../dashcam.jpg', '../park.jpg']}) # works if cap.isOpened() is False
