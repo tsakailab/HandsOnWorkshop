@@ -84,7 +84,7 @@ class ftImShow(ft.UserControl):
         fps_timer = fps_counter()
         while self.keep_running:
             self._detect_draw()
-            if self.drawer.bfps:
+            if self.drawer is not None and self.drawer.bfps:
                 fps = fps_timer.count_get()
                 cv2.putText(self._bgr, 'FPS: {:.2f}'.format(fps), (10,30), cv2.FONT_HERSHEY_SIMPLEX,
                         1.0, (128,128,0), thickness=2)
@@ -105,15 +105,15 @@ class ftImShow(ft.UserControl):
         frame = cv2.resize(frame, (self.hw[1],self.hw[0]))
         if self.mirror:
             frame = cv2.flip(frame, 1)
+        result = None
         if self.imgproc is not None:
             if self.detector is None and 'DETECTOR' in self.imgproc:
                 self.detector = self.imgproc['DETECTOR'](**self.imgproc['DETECTOR_PARAMS'])
-        #    self.detector = self.imgproc['detector'](**DETECTOR_PARAMS)
             result = self.detector.detect(frame)
             if self.drawer is None and 'DRAWER' in self.imgproc:
                 self.drawer = self.imgproc['DRAWER'](**self.imgproc['DRAWER_OPTS'])
-            #self._bgr = self.imgproc['DRAWER'](result, frame, **self.imgproc['DRAWER_OPTS'])
-            self._bgr = self.drawer.draw(result, frame)
+            if result is not None:
+                self._bgr = self.drawer.draw(result, frame)
         else:
             self._bgr = frame
 
