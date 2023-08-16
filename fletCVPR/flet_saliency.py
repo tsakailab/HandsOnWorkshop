@@ -20,16 +20,17 @@ PageOpts = {'TITLE': "Visual Saliency",
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': args['padding'],
-        'WINDOW_HW': (args['resolution'][0]+400, args['resolution'][1]+2*args['padding']), 
+        'WINDOW_HW': (args['resolution'][0]+240, args['resolution'][1]+2*args['padding']), 
         'WINDOW_TOP_LEFT': (50,100), '_WINDOW_TOP_LEFT_INCR': False}
 
 # defaults
 detector_params = {'scale': 0.10, 'sigma': 0.001, 'sigma_smooth': 2.5}
 #detector_params = {'modelname': "yolov8n-seg", 'imgsz': 960, 'conf': 0.25, 'iou': 0.7}
 drawer_opts = {'bblend': False, 'bcont': False, 'contlevel': 16, 'bbinary': False, 
-               'bframew': True, 'bfps': False, 'gamma': 1.2}
-section_opts = {'img_size': args['resolution'], 'keep_running': False,
-                'bottom_margin': 40, 'elevation': 20, 'padding':10, 'text_size': 20, 'border_radius': 20}
+               'bframew': True, 'bfps': True}
+section_opts = {'img_size': args['resolution'], 'keep_running': False, 
+                'slider': {'scale': {'width': 400, 'value': 10, 'min': 3, 'max': 30, 'divisions': 27, 'label': "scale={value}"}}, 
+                'bottom_margin': 40, 'elevation': 20, 'padding':10, 'border_radius': 20}
 
 def ComputeSaliencyMap(inImage, scale=0.05, sigma=0.001, sigma_smooth = 2.5):
     inImage_size = (inImage.shape[1], inImage.shape[0])  # (width, height)
@@ -41,7 +42,7 @@ def ComputeSaliencyMap(inImage, scale=0.05, sigma=0.001, sigma_smooth = 2.5):
     FT_inImage = fft2(inImage, shape=(next_fast_len(resize_size[1]), next_fast_len(resize_size[0])))
     FT_inImage = fftshift(FT_inImage)
 
-    Amp = np.log(np.abs(FT_inImage))
+    Amp = np.log(np.abs(FT_inImage)+1e-8)
     Phase = np.angle(FT_inImage)
 
     # Spectral residual (Laplacian of the Spectrum)
@@ -58,34 +59,38 @@ def ComputeSaliencyMap(inImage, scale=0.05, sigma=0.001, sigma_smooth = 2.5):
     # resize to original size
     saliencyMap = np.array(Image.fromarray(saliencyMap[0:resize_size[1], 0:resize_size[0]]).resize(inImage_size))
     # normalize values from 0 to 255
-    saliencyMap = ((saliencyMap - np.min(saliencyMap)) / (np.max(saliencyMap) - np.min(saliencyMap)) * 255).astype(np.uint8)
+    saliencyMap = ((saliencyMap - np.min(saliencyMap)) / (np.max(saliencyMap) - np.min(saliencyMap)+1e-4) * 255).astype(np.uint8)
     return saliencyMap
 
 
 #### (1/3) Define a detector ####
+# will be used in flet_util.ftImShow as
 # detector = Detector(**detector_params)
 class Detector():
     def __init__(self, **kwargs):
         self.detector = ComputeSaliencyMap
         self.opts = kwargs
 
-    # do not change the function name and args
+    # Do not change the function name. The first arg is the target bgr image.
     def detect(self, bgr):
         csal = np.zeros(bgr.shape)
         csal[..., 0] = self.detector(bgr[:,:,0], **self.opts)
         csal[..., 1] = self.detector(bgr[:,:,1], **self.opts)
         csal[..., 2] = self.detector(bgr[:,:,2], **self.opts)
         sal = 0.299 * csal[:, :, 2] + 0.587 * csal[:, :, 1] + 0.114 * csal[:, :, 0]
-        return np.clip(sal, 0, 255).astype(np.uint8)
+        return np.clip(sal, 0, 255)#.astype(np.uint8)
 
-#### (2/3) Define a Rrawer according to the detector result ####
+#### (2/3) Define a Rrawer to show the detector's result as a bgr image ####
 # result = detector.detect(_bgr_to_mp(bgr))
+# will be used in flet_util.ftImshow as 
 # bgr = Drawer(**draw_opts).draw(result, bgr)
 class Drawer():
     def __init__(self, **kwargs):
-        self.__dict__.update(kwargs)
+        self.bfps = False
         self.FrameWindow = None
+        self.__dict__.update(kwargs)
 
+    # Do not change the function name. The first and secont args are the result and the target bgr image.
     def draw(self, sal, bgr):
         mask = np.ones(bgr.shape[:2], dtype=np.uint8)
         if self.FrameWindow is None:
@@ -101,7 +106,7 @@ class Drawer():
         frame = bgr
         if self.bblend:
             #frame = (frame * (sal / 255.0)[..., None]).astype(np.uint8)
-            frame = np.clip((frame**self.gamma) * (sal / 255.0)[..., None], 0, 255).astype(np.uint8)
+            frame = np.clip((frame+64.0) * (sal / 255.0)[..., None], 0, 255).astype(np.uint8)
             if self.bbinary:
                 frame = (frame * mask[..., None]).astype(np.uint8)
                 #frame = np.clip((frame**self.gamma) * mask[..., None], 0, 255).astype(np.uint8)
@@ -111,47 +116,48 @@ class Drawer():
         return cv2.addWeighted(frame, 0.90, bgr, 0.10, 0)
  
 
-#### (3/3) Set controlable values by sliders #### 
-# section = CreateSection(cap, imgproc=imgproc, **section_opt)
+#### (3/3) Define how to display in a page ####
+# you will use this as
+# contents = Section(cap, imgproc=imgproc, **section_opts).create()
 CAMERAS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
 class Section():
-    def __init__(self, cap, imgproc=None, img_size=(480,640), keep_running=False, 
-                 bottom_margin=40, elevation=30, padding=10, text_size=20, border_radius=20):
+    def __init__(self, cap=None, imgproc=None, **kwargs):
         self.cap = cap
         self.imgproc = imgproc
-        self.img_size = img_size
-        self.keep_running = keep_running
-        self.bottom_margin = bottom_margin
-        self.elevation = elevation
-        self.padding = padding
-        self.text_size = text_size
-        self.border_radius = border_radius
+        self.img_size = (480,640)
+        self.keep_running = False
+        self.slider = None
+        self.bottom_margin = 40
+        self.elevation = 30
+        self.padding = 10
+        self.border_radius = 20
+        self.__dict__.update(kwargs)
         self.controls = {}
 
     def set_cap(self, dummy):
         if self.controls['cap_view'].images is None:
             self.controls['cap_view'].SetSource(int(self.controls['dd'].value))
-            self.controls['cap_view'].update_timer()
+            self.controls['cap_view'].Renew()
         else:
             self.controls['cap_view'].SetSource(self.controls['cap_view'].images.index(self.controls['dd'].value))
-            self.controls['cap_view'].update_timer()
+            self.controls['cap_view'].Renew()
 
     def set_mirror(self, dummy):
         self.controls['cap_view'].mirror = self.controls['sw_mirror'].value
-        self.controls['cap_view'].update_timer()
+        self.controls['cap_view'].Renew()
 
     def set_bblend(self, dummy):
         self.controls['cap_view'].drawer.bblend = self.controls['sw_bblend'].value
-        self.controls['cap_view'].update_timer()
+        self.controls['cap_view'].Renew()
     def set_bcont(self, dummy):
         self.controls['cap_view'].drawer.bcont = self.controls['sw_bcont'].value
-        self.controls['cap_view'].update_timer()
+        self.controls['cap_view'].Renew()
     def set_bbinary(self, dummy):
         self.controls['cap_view'].drawer.bbinary = self.controls['sw_bbinary'].value
-        self.controls['cap_view'].update_timer()
+        self.controls['cap_view'].Renew()
     def set_bframew(self, dummy):
         self.controls['cap_view'].drawer.bframew = self.controls['sw_bframew'].value
-        self.controls['cap_view'].update_timer()
+        self.controls['cap_view'].Renew()
 
     def create(self):
         self.controls['cap_view'] = ftImShow(self.cap, imgproc=self.imgproc, keep_running=self.keep_running,
@@ -194,11 +200,8 @@ class Section():
                     border_radius=ft.border_radius.all(self.border_radius),
                     content=ft.Column([
                         ft.Slider(
-                            #value=self.controls['cap_view'].imgproc['DETECTOR_PARAMS']['scale'], 
-                            # value=10, min=5, max=30, divisions=25, label="scale={value}/100",
-                            # on_change=lambda e: self.controls['cap_view'].RenewDetector({'scale': e.control.value/100}), width=400
-                            value=10, min=3, max=30, divisions=27, label="scale={value}",
-                            on_change=lambda e: self.controls['cap_view'].RenewDetector({'scale': 1/e.control.value}).update_timer(), width=400
+                            on_change=lambda e: self.controls['cap_view'].RenewDetector({'scale': 1/e.control.value}).Renew(),
+                            **self.slider['scale']
                         ),
                         # ft.Slider(
                         #     min=500, max=900,
@@ -224,11 +227,12 @@ imgproc = {'DETECTOR': Detector, 'DETECTOR_PARAMS': detector_params,
 import sys
 def main(page: ft.Page):
 
-    cap = cv2.VideoCapture(0) if imgproc['IMAGES'] is None else None
-    if len(sys.argv) > 1:
+    if len(sys.argv) > 1: # force to use the specified camera
         imgproc['IMAGES'] = None
         section_opts['keep_running'] = True
         cap = cv2.VideoCapture(int(sys.argv[1]))
+    else:
+        cap = cv2.VideoCapture(0) if imgproc['IMAGES'] is None else None
 
     section = Section(cap, imgproc=imgproc, **section_opts)
     contents = section.create()
