@@ -1,7 +1,5 @@
 import flet as ft
-import base64 #
-import numpy as np #
-import cv2 #
+import cv2
 from ultralytics import YOLO
 import sys
 sys.path.append("../util")
@@ -21,7 +19,7 @@ PageOpts = {'TITLE': "Object Detection (YOLOv8)",
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': args['padding'],
-        'WINDOW_HW': (args['resolution'][0]+400, args['resolution'][1]+2*args['padding']), 
+        'WINDOW_HW': (args['resolution'][0]+240, args['resolution'][1]+2*args['padding']), 
         'WINDOW_TOP_LEFT': (50,100), '_WINDOW_TOP_LEFT_INCR': False}
 
 # defaults
@@ -47,7 +45,7 @@ class Detector():
 
 
 #### (2/3) Define a Rrawer to show the detector's result as a bgr image ####
-# result = detector.detect(_bgr_to_mp(bgr))
+# result = detector.detect(bgr)
 # will be used in flet_util.ftImshow as 
 # bgr = Drawer(**draw_opts).draw(result, bgr)
 class Drawer():
@@ -147,11 +145,14 @@ imgproc = {'DETECTOR': Detector, 'DETECTOR_PARAMS': detector_params,
 import sys
 def main(page: ft.Page):
 
-    cap = cv2.VideoCapture(0) if imgproc['IMAGES'] is None else None
-    if len(sys.argv) > 1: # force to use the specified camera
-        imgproc.update({'IMAGES': None})
-        section_opts['keep_running'] = True
-        cap = cv2.VideoCapture(int(sys.argv[1]))
+    cap = None
+    if imgproc['IMAGES'] is None:
+        if len(sys.argv) > 1: # force to use the specified camera
+            imgproc['IMAGES'] = None
+            section_opts['keep_running'] = True
+            cap = cv2.VideoCapture(int(sys.argv[1]))
+        else:
+            cap = cv2.VideoCapture(0)
     else: # use IMAGES
         imgproc['MIRROR'] = False
         section_opts['keep_running'] = False
