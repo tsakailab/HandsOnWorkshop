@@ -1,255 +1,174 @@
 import flet as ft
-import base64
-import numpy as np
-import cv2
+import base64 #
+import numpy as np #
+import cv2 #
 from ultralytics import YOLO
+import sys
+sys.path.append("../util")
+from flet_util import set_page, ftImShow
+
 
 resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,1024), 
           'HD': (720,1280), 'FWXGA': (768,1366), 'HD+': (900,1600), 'FHD': (1080,1920)}
 
-args = {'app': {}, #{'view': ft.WEB_BROWSER},
-        'resolusion': resols['qHD'], 'padding': 10}
+args = {'app': {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
+        'resolution': resols['qHD'], 'padding': 10, 
+        'images': None}
+args.update({'images': ['../dashcam.jpg', '../park.jpg']}) # works if cap.isOpened() is False
 
-PageOpts = {'TITLE': "Object Detection (YOLOv8)", 
+
+PageOpts = {'TITLE': "Object Segmentation (YOLOv8)", 
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': args['padding'],
         'WINDOW_HW': (args['resolution'][0]+400, args['resolution'][1]+2*args['padding']), 
         'WINDOW_TOP_LEFT': (50,100), '_WINDOW_TOP_LEFT_INCR': False}
 
-def set_page(page, PageOpts):
-    page.title = PageOpts['TITLE']
-    page.theme_mode = PageOpts['THEME_MODE']
-    page.vertical_alignment = PageOpts['VERTICAL_ALIGNMENT']
-    page.horizontal_alignment = PageOpts['HORIZONTAL_ALIGNMENT']
-    page.padding = PageOpts['PADDING']
-    page.window_height, page.window_width = PageOpts['WINDOW_HW']
-    if PageOpts['_WINDOW_TOP_LEFT_INCR']:
-        page.window_top += PageOpts['WINDOW_TOP_LEFT'][0]
-        page.window_left += PageOpts['WINDOW_TOP_LEFT'][1]
-    else:
-        page.window_top, page.window_left = PageOpts['WINDOW_TOP_LEFT']
-
-
 # defaults
 detector_params = {'modelname': "yolov8n-seg", 'imgsz': args['resolution'][1], 'conf': 0.25, 'iou': 0.7}
-drawer_opts = {}
-section_opts = {'img_size': args['resolution'], 'bottom_margin': 40, 'elevation': 20, 'padding':10, 'text_size': 20, 'border_radius': 20}
+drawer_opts = {'bfps': True}
+section_opts = {'img_size': args['resolution'], 'keep_running': True,
+                'slider': {'conf': {'width': 400, 'value': int(detector_params['conf']*100), 'min': 1, 'max': 99, 'divisions': 98, 'label': "{value}/100"}}, 
+                'bottom_margin': 40, 'elevation': 20, 'padding':10, 'border_radius': 20}
 
 
 #### (1/3) Define a detector ####
+# will be used in flet_util.ftImShow as
 # detector = Detector(**detector_params)
 class Detector():
     def __init__(self, modelname, imgsz=32, conf=0.25, iou=0.7):
         self.detector = YOLO(modelname)
         self.opts = {'imgsz': imgsz, 'conf': conf, 'iou': iou}
 
-    # do not change the function name and args
+    # Do not change the function name. The first arg is the target bgr image.
     def detect(self, bgr):
         # https://docs.ultralytics.com/modes/predict/#inference-arguments
         return self.detector.predict(bgr, verbose=False, **self.opts)
 
 
-#### (2/3) Define a Rrawer according to the detector result ####
+#### (2/3) Define a Rrawer to show the detector's result as a bgr image ####
 # result = detector.detect(_bgr_to_mp(bgr))
+# will be used in flet_util.ftImshow as 
 # bgr = Drawer(**draw_opts).draw(result, bgr)
 class Drawer():
-    def __init__(self):
-        self.objects = {}
+    def __init__(self, **kwargs):
+        self.bfps = False
+        self.__dict__.update(kwargs)
 
-    # do not change the function name and args
+    # Do not change the function name. The first and secont args are the result and the target bgr image.
     def draw(self, detection_result, bgr):
         annotated = detection_result[0].plot()
         return cv2.addWeighted(annotated, 0.5, bgr, 0.5, 0)
 
 
-# macros
-imgfmt, base64code = '.jpg', 'ascii'
-def _bgr_to_base64(bgr):
-    src_base64 = base64.b64encode(
-                cv2.imencode(imgfmt, bgr)[1]
-                ).decode(base64code)
-    return src_base64
-
-class fps_counter():
-    def __init__(self, max_count=10):
-        self.fps = 0.0
-        self.tm = cv2.TickMeter()
-        self.count = 0
-        self.max_count = max_count
-        self.tm.start()
-
-    def count(self):
-        self.count += 1
-
-    def count_get(self):
-        self.count += 1
-        if self.count == self.max_count:
-            self.tm.stop()
-            self.fps = self.max_count / self.tm.getTimeSec()
-            self.tm.reset()
-            self.tm.start()
-            self.count = 0
-        return self.fps
-
-
-class ftimshow(ft.UserControl):
-    def __init__(self, cap, imgproc=None, hw=(480,640)):
-        super().__init__()
+#### (3/3) Define how to display in a page ####
+# you will use this as
+# contents = Section(cap, imgproc=imgproc, **section_opts).create()
+CAMERAS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
+class Section():
+    def __init__(self, cap=None, imgproc=None, **kwargs):
         self.cap = cap
         self.imgproc = imgproc
-        self.hw = hw
-        self.capid = 0
-        self.mirror = imgproc['MIRROR'] if imgproc is not None and 'MIRROR' in imgproc else None
-        self.images = imgproc['IMAGES'] if imgproc is not None and 'IMAGES' in imgproc else None
-        self.bgr = np.zeros((hw[0],hw[1],3), np.uint8)
-        self.src_base64 = _bgr_to_base64(self.bgr)
-        self.img = ft.Image(
-            src_base64=self.src_base64,
-            width=hw[1], height=hw[0],
-            fit=ft.ImageFit.CONTAIN,
-            border_radius=ft.border_radius.all(20)
-        )
-        self.detector=None
-        self.drawer=None
+        self.img_size = (480,640)
+        self.keep_running = False
+        self.slider = None
+        self.bottom_margin = 40
+        self.elevation = 30
+        self.padding = 10
+        self.border_radius = 20
+        self.__dict__.update(kwargs)
+        self.controls = {}
 
-    def _imread(self):
-        if isinstance(self.images, list) and self.capid < len(self.images):
-            success, bgr = True, cv2.imread(self.images[self.capid])
+    def set_cap(self, dummy):
+        if self.controls['cap_view'].images is None:
+            self.controls['cap_view'].SetSource(int(self.controls['dd'].value))
+            self.controls['cap_view'].Renew()
         else:
-            success, bgr = False, None
-        return success, bgr
+            self.controls['cap_view'].SetSource(self.controls['cap_view'].images.index(self.controls['dd'].value))
+            self.controls['cap_view'].Renew()
 
-    def did_mount(self):
-        self.update_timer()
+    def set_mirror(self, dummy):
+        self.controls['cap_view'].mirror = self.controls['sw_mirror'].value
+        self.controls['cap_view'].Renew()
 
-    def update_timer(self):
-        fps_timer = fps_counter()
+    def create(self):
+        self.controls['cap_view'] = ftImShow(self.cap, imgproc=self.imgproc, keep_running=self.keep_running,
+                                             hw=self.img_size, border_radius=self.border_radius)
+        ddlist = CAMERAS if self.controls['cap_view'].images is None else self.controls['cap_view'].images
+        self.controls['dd'] = ft.Dropdown(label="Camera/Image", width=256, 
+                        options=[ft.dropdown.Option(c) for c in ddlist],
+                        on_change=self.set_cap)
+        self.controls['sw_mirror'] = ft.Switch(label="Mirror", value=self.controls['cap_view'].mirror, label_position=ft.LabelPosition.LEFT,
+                                               on_change=self.set_mirror)
 
-        while True:
-            if self.cap.isOpened():
-                success, frame = self.cap.read()
-            else:
-                success, frame = self._imread()
-
-            if not success:
-                continue
-
-            frame = cv2.resize(frame, (self.hw[1],self.hw[0]))
-            if self.mirror:
-                frame = cv2.flip(frame, 1)
-            if self.imgproc is not None:
-                if self.detector is None and 'DETECTOR' in self.imgproc:
-                    self.detector = self.imgproc['DETECTOR'](**self.imgproc['DETECTOR_PARAMS'])
-            #    self.detector = self.imgproc['detector'](**DETECTOR_PARAMS)
-                result = self.detector.detect(frame)
-                if self.drawer is None and 'DRAWER' in self.imgproc:
-                    self.drawer = self.imgproc['DRAWER'](**self.imgproc['DRAWER_OPTS'])
-                #self.bgr = self.imgproc['DRAWER'](result, frame, **self.imgproc['DRAWER_OPTS'])
-                self.bgr = self.drawer.draw(result, frame)
-            else:
-                self.bgr = frame
-
-            fps = fps_timer.count_get()
-            cv2.putText(self.bgr, 'FPS: {:.2f}'.format(fps), (10,30), cv2.FONT_HERSHEY_SIMPLEX,
-                    1.0, (128,128,0), thickness=2)
-
-            self.src_base64 = _bgr_to_base64(self.bgr)
-            self.img.src_base64 = self.src_base64
-            self.update()
-
-    def build(self):
-        return self.img
-
-    def RenewDetector(self, newparam):
-        self.imgproc['DETECTOR_PARAMS'].update(newparam)
-        self.detector=None
-
-    def SetSource(self, cid):
-        self.capid = cid
-        if self.images is None:
-            self.cap.release()
-            self.cap = cv2.VideoCapture(cid)
-
-
-
-#### (3/3) Set controlable values by sliders #### 
-# section = CreateSection(cap, imgproc=imgproc, **section_opt)
-CAMERAS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
-def CreateSection(cap, imgproc=None, img_size=(480,640),
-                  bottom_margin=40, elevation=30, padding=10, text_size=20, border_radius=20):
-
-    cap_view = ftimshow(cap, imgproc=imgproc, hw=img_size)
-
-    def set_cap(dummy):
-        cap_view.SetSource(int(dd.value))
-    ddlist = CAMERAS if cap_view.images is None else cap_view.images
-    dd = ft.Dropdown(label="Camera/Image", width=256, 
-                     options=[ft.dropdown.Option(c) for c in ddlist],
-                     on_change=set_cap)
-
-    def set_mirror(dummy):
-        cap_view.mirror = sw.value
-    sw = ft.Switch(label="Mirror", value=True, label_position=ft.LabelPosition.LEFT,
-                   on_change=set_mirror)
-
-    section = ft.Container(
-        margin=ft.margin.only(bottom=bottom_margin),
-        content=ft.Column([
-            ft.Card(
-                elevation=elevation,
-                content=ft.Container(
+        section = ft.Container(
+            margin=ft.margin.only(bottom=self.bottom_margin),
+            content=ft.Column([
+                ft.Card(
+                    elevation=self.elevation,
+                    content=ft.Container(
+                        bgcolor=ft.colors.WHITE24,
+                        padding=self.padding,
+                        border_radius = ft.border_radius.all(self.border_radius),
+                        content=ft.Column([
+                            self.controls['cap_view'], 
+                            ft.Row([self.controls['dd'], self.controls['sw_mirror']])
+                        ],
+                        tight=True, spacing=0
+                        ),
+                    )
+                ),
+                ft.Container(
                     bgcolor=ft.colors.WHITE24,
-                    padding=padding,
-                    border_radius = ft.border_radius.all(border_radius),
+                    padding=self.padding,
+                    border_radius=ft.border_radius.all(self.border_radius),
                     content=ft.Column([
-                        cap_view, ft.Row([dd, sw])
-                    ],
-                    tight=True, spacing=0
+                        ft.Slider(
+                            on_change=lambda e: self.controls['cap_view'].RenewDetector({'conf': e.control.value/100}).Renew(),
+                            **self.slider['conf']
+                        ),
+                    ]
                     ),
                 )
-            ),
-            ft.Container(
-                bgcolor=ft.colors.WHITE24,
-                padding=padding,
-                border_radius=ft.border_radius.all(border_radius),
-                content=ft.Column([
-                    ft.Slider(
-                        min=1, max=99, 
-                        on_change=lambda e: cap_view.RenewDetector({'conf': e.control.value/100}) #print(e.control.value)
-                    ),
-                    # ft.Slider(
-                    #     min=500, max=900,
-                    # )
-                ]
-                ),
+            ],
+                alignment=ft.MainAxisAlignment.CENTER,
             )
-        ],
-            alignment=ft.MainAxisAlignment.CENTER,
         )
-    )
-    return section
+        return section
+
+    def terminate(self):
+        self.controls['cap_view'].keep_running = False
 
 
 imgproc = {'DETECTOR': Detector, 'DETECTOR_PARAMS': detector_params, 
            'DRAWER': Drawer, 'DRAWER_OPTS': drawer_opts,
-           'IMAGES': None, 'MIRROR': True}
-#imgproc.update({'IMAGES': ['image0.jpg', 'image1.png']}) # works if cap.isOpened() is False
+           'IMAGES': args['images'], 'MIRROR': True}
 
-cap = cv2.VideoCapture(0) # set None to use IMAGES
-caprelease = lambda _: cap.release()
+import sys
 def main(page: ft.Page):
+
+    cap = cv2.VideoCapture(0) if imgproc['IMAGES'] is None else None
+    if len(sys.argv) > 1: # force to use the specified camera
+        imgproc.update({'IMAGES': None})
+        section_opts['keep_running'] = True
+        cap = cv2.VideoCapture(int(sys.argv[1]))
+    else: # use IMAGES
+        imgproc['MIRROR'] = False
+        section_opts['keep_running'] = False
+
+    section = Section(cap, imgproc=imgproc, **section_opts)
+    contents = section.create()
+
+    # def on_disconnect( _: ft.ControlEvent):
+    #         if cap is not None:
+    #             cap.release()
+    #         print("on_disconnect")
+    #         section.terminate()
+    # page.on_disconnect = on_disconnect
 
     set_page(page, PageOpts)
     page.update()
-
-    section = CreateSection(cap, imgproc=imgproc, **section_opts)
-    page.add(
-        section,
-    )
-    #page.on_disconnect(caprelease)
+    page.add(contents)
 
 if __name__ == '__main__':
     ft.app(target=main, **args['app'])
-    cap.release()
-    cv2.destroyAllWindows()
