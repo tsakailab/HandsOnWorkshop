@@ -1,0 +1,11 @@
+ultralytics
+pyrealsense2
+mediapipe
+flet
+scikit-learn
+numpy
+scipy
+pandas
+matplotlib
+plotly
+requests
