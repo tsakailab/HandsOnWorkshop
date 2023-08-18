@@ -96,7 +96,7 @@ class ftImShow(ft.UserControl): # for RealSense
         self.controls.append(ft.Row([ft.Image(src_base64=self._src_base64[cids[0]], width=hw[1], height=hw[0],
                                      fit=ft.ImageFit.CONTAIN, border_radius=border_radius)]))
         for cid in cids[1:]:
-            self.controls[0].append(ft.Image(src_base64=self._src_base64[cid], width=hw[1], height=hw[0],
+            self.controls[0].controls.append(ft.Image(src_base64=self._src_base64[cid], width=hw[1], height=hw[0],
                                     fit=ft.ImageFit.CONTAIN, border_radius=border_radius))
         self.detector=None
         self.drawer=None
