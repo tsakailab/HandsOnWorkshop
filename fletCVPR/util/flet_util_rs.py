@@ -13,7 +13,7 @@ import cv2
 # if success:
 #   bgr, depth = frame
 class rsVideoCapture():
-    def __init__(self, capid=0, hw=(480,680), align=rs.align(rs.stream.color),
+    def __init__(self, capid=0, hw=(480,640), align=rs.align(rs.stream.color),
                  format={'color': rs.format.bgr8, 'depth': rs.format.z16}, fps=30):
         self.cid = capid
         self.align = align
@@ -42,7 +42,7 @@ class rsVideoCapture():
             self.isopened = False
         bgr = np.asanyarray(bgr.get_data())
         depth = np.asanyarray(depth.get_data())        
-        return self.isopend, (bgr, depth)
+        return self.isopened, [bgr, depth]
        
     def release(self):
         self.pipeline.stop()
@@ -92,10 +92,10 @@ class ftImShow(ft.UserControl): # for RealSense
         #self.images = imgproc['IMAGES'] if imgproc is not None and 'IMAGES' in imgproc else None
         self._frame = np.zeros((hw[0],hw[1],3), np.uint8), np.zeros((hw[0],hw[1]), np.uint16)
         self._src_base64 = _bgr_to_base64(self._frame[0]), _bgr_to_base64(cv2.cvtColor(self._frame[1], cv2.COLOR_GRAY2BGR))
-        self.controls = [ft.Image(src_base64=self._src_base64[0], width=hw[1], height=hw[0],
-                                  fit=ft.ImageFit.CONTAIN, border_radius=border_radius),
-                         ft.Image(src_base64=self._src_base64[1], width=hw[1], height=hw[0],
-                                  fit=ft.ImageFit.CONTAIN, border_radius=border_radius)]
+        self.controls.append(ft.Row([ft.Image(src_base64=self._src_base64[0], width=hw[1], height=hw[0],
+                                     fit=ft.ImageFit.CONTAIN, border_radius=border_radius),
+                                     ft.Image(src_base64=self._src_base64[1], width=hw[1], height=hw[0],
+                                     fit=ft.ImageFit.CONTAIN, border_radius=border_radius)]))
         self.detector=None
         self.drawer=None
         self.keep_running = keep_running
@@ -109,11 +109,11 @@ class ftImShow(ft.UserControl): # for RealSense
             self._detect_draw()
             if self.drawer is not None and self.drawer.bfps:
                 fps = fps_timer.count_get()
-                cv2.putText(self._frame[0], 'FPS: {:.2f}'.format(fps), (10,30), cv2.FONT_HERSHEY_SIMPLEX,
+                self._frame[0] = cv2.putText(self._frame[0].copy(), 'FPS: {:.2f}'.format(fps), (10,30), cv2.FONT_HERSHEY_SIMPLEX,
                         1.0, (128,128,0), thickness=1)
-            self._src_base64 = _bgr_to_base64(self._frame[0]), _bgr_to_base64(cv2.cvtColor(self._frame[1], cv2.COLOR_GRAY2BGR))
-            self.controls[0].src_base64 = self._src_base64[0]
-            self.controls[1].src_base64 = self._src_base64[1]
+            self._src_base64 = _bgr_to_base64(self._frame[0]), _bgr_to_base64(self._frame[1])
+            self.controls[0].controls[0].src_base64 = self._src_base64[0]
+            self.controls[0].controls[1].src_base64 = self._src_base64[1]
             self.update()
         if not self.keep_running:
             self.Renew()
