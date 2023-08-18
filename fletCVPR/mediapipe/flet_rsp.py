@@ -26,6 +26,7 @@ PageOpts = {'TITLE': "Hand Landmarker (mediapipe)",
         'WINDOW_HW': (args['resolution'][0]+240, args['resolution'][1]+2*args['padding']), 
         'WINDOW_TOP_LEFT': (50,100), '_WINDOW_TOP_LEFT_INCR': False}
 
+## Please copy and paste line #29 ~ #220 for rock paper scissors game
 # defaults
 #detector_params = {'model_asset_path': "./object_detector.tflite", 'score_threshold': 0.3}
 detector_params = {'model_asset_path': "./hand_detector.task", 'num_hands': 8}
