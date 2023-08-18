@@ -12,6 +12,9 @@ def set_page(page, PageOpts):
     else:
         page.window_top, page.window_left = PageOpts['WINDOW_TOP_LEFT']
 
+    page.window_prevent_close = True
+    #page.add(ft.FilledButton(text="Filled button", on_click=lambda e: page.window_destroy()))
+
 
 import flet as ft
 import base64
