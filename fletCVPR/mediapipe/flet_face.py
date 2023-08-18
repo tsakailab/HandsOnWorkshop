@@ -11,9 +11,10 @@ from flet_util import set_page, ftImShow
 
 resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,1024), 
           'HD': (720,1280), 'FWXGA': (768,1366), 'HD+': (900,1600), 'FHD': (1080,1920)}
+CAMERAS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
 
 args = {'app': {}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
-        'resolution': resols['qHD'], 'padding': 10,
+        'resolution': resols['qHD'], 'padding': 10, 'cameras': CAMERAS,
         'images': None}
 #args.update({'images': ['../dashcam.jpg', '../park.jpg']}) # works if cap.isOpened() is False
 
@@ -180,12 +181,12 @@ class Drawer():
 #### (3/3) Define how to display in a page ####
 # you will use this as
 # contents = Section(cap, imgproc=imgproc, **section_opts).create()
-CAMERAS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
 class Section():
     def __init__(self, cap=None, imgproc=None, **kwargs):
         self.cap = cap
         self.imgproc = imgproc
         self.img_size = (480,640)
+        self.cameras = ["0"]
         self.keep_running = False
         self.bottom_margin = 40
         self.elevation = 30
@@ -213,7 +214,7 @@ class Section():
     def create(self):
         self.controls['cap_view'] = ftImShow(self.cap, imgproc=self.imgproc, keep_running=self.keep_running,
                                              hw=self.img_size, border_radius=self.border_radius)
-        ddlist = CAMERAS if self.controls['cap_view'].images is None else self.controls['cap_view'].images
+        ddlist = self.cameras if self.controls['cap_view'].images is None else self.controls['cap_view'].images
         self.controls['dd'] = ft.Dropdown(label="Camera/Image", width=256, 
                         options=[ft.dropdown.Option(c) for c in ddlist],
                         on_change=self.set_cap)
@@ -260,18 +261,18 @@ import sys
 def main(page: ft.Page):
 
     cap = None
-    if imgproc['IMAGES'] is None:
-        if len(sys.argv) > 1: # force to use the specified camera
-            imgproc['IMAGES'] = None
-            section_opts['keep_running'] = True
-            cap = cv2.VideoCapture(int(sys.argv[1]))
-        else:
-            cap = cv2.VideoCapture(0)
+    if len(sys.argv) > 1: # force to use the specified camera
+        imgproc['IMAGES'] = None
+        section_opts['keep_running'] = True
+        cap = cv2.VideoCapture(int(sys.argv[1]))
+        args['cameras'] = sys.argv[2:]
+    elif imgproc['IMAGES'] is None:
+        cap = cv2.VideoCapture(0)
     else: # use IMAGES
         imgproc['MIRROR'] = False
         section_opts['keep_running'] = False
 
-    section = Section(cap, imgproc=imgproc, **section_opts)
+    section = Section(cap, imgproc=imgproc, cameras=args['cameras'], **section_opts)
     contents = section.create()
 
     # def on_disconnect( _: ft.ControlEvent):

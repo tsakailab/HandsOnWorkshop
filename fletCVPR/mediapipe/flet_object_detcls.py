@@ -26,7 +26,7 @@ PageOpts = {'TITLE': "Object Detection (YOLOv8)",
 # defaults
 #detector_params = {'model_asset_path': "./object_detector.tflite", 'score_threshold': 0.3}
 detector_params = {'model_asset_path': "./efficientdet_lite2_float32.tflite", 'score_threshold': 0.3}
-drawer_opts = {'bfps': True, 'margin': 10, 'row_size': 10, 'font_size': 2, 'font_thickness': 2, 'line_thickness': 2}
+drawer_opts = {'bfps': True, 'margin': 5, 'row_size': 20, 'font_size': 1.5, 'font_thickness': 2, 'line_thickness': 2}
 section_opts = {'img_size': args['resolution'], 'keep_running': True,
                 'slider': {'score_threshold': {'width': 400, 'value': int(detector_params['score_threshold']*100), 'min': 1, 'max': 99, 'divisions': 98, 'label': "{value}/100"}}, 
                 'bottom_margin': 40, 'elevation': 20, 'padding':10, 'border_radius': 20}
@@ -193,13 +193,12 @@ import sys
 def main(page: ft.Page):
 
     cap = None
-    if imgproc['IMAGES'] is None:
-        if len(sys.argv) > 1: # force to use the specified camera
-            imgproc['IMAGES'] = None
-            section_opts['keep_running'] = True
-            cap = cv2.VideoCapture(int(sys.argv[1]))
-        else:
-            cap = cv2.VideoCapture(0)
+    if len(sys.argv) > 1: # force to use the specified camera
+        imgproc['IMAGES'] = None
+        section_opts['keep_running'] = True
+        cap = cv2.VideoCapture(int(sys.argv[1]))
+    elif imgproc['IMAGES'] is None:
+        cap = cv2.VideoCapture(0)
     else: # use IMAGES
         imgproc['MIRROR'] = False
         section_opts['keep_running'] = False
