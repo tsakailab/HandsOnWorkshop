@@ -227,12 +227,17 @@ imgproc = {'DETECTOR': Detector, 'DETECTOR_PARAMS': detector_params,
 import sys
 def main(page: ft.Page):
 
+    cap = None
     if len(sys.argv) > 1: # force to use the specified camera
         imgproc['IMAGES'] = None
         section_opts['keep_running'] = True
         cap = cv2.VideoCapture(int(sys.argv[1]))
-    else:
-        cap = cv2.VideoCapture(0) if imgproc['IMAGES'] is None else None
+        args['cameras'] = sys.argv[2:]
+    elif imgproc['IMAGES'] is None:
+        cap = cv2.VideoCapture(0)
+    else: # use IMAGES
+        imgproc['MIRROR'] = False
+        section_opts['keep_running'] = False
 
     section = Section(cap, imgproc=imgproc, **section_opts)
     contents = section.create()
@@ -245,6 +250,7 @@ def main(page: ft.Page):
     # page.on_disconnect = on_disconnect
 
     set_page(page, PageOpts)
+    page.on_window_event = lambda e: (cap.release() if cap is not None else None, cv2.waitKey(1000), page.window_destroy()) if e.data == "close" else None
     page.update()
     page.add(contents)
 

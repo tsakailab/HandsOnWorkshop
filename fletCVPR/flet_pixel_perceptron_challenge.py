@@ -191,6 +191,7 @@ def create_ftimages(images, hw):
 
 def main(page: ft.Page):
     set_page(page, PageOpts)
+    page.on_window_event = lambda e: page.window_destroy() if e.data == "close" else None
     page.update()
 
     hw = args['cell_size'] * args['table_size'][0], args['cell_size'] * args['table_size'][1]
