@@ -70,6 +70,7 @@ class ftImShow(ft.UserControl):
         self.detector=None
         self.drawer=None
         self.keep_running = keep_running
+        self.detection_result = None
 
     def _imread(self):
         success, bgr = False, None
@@ -110,15 +111,15 @@ class ftImShow(ft.UserControl):
         frame = cv2.resize(frame, (self.hw[1],self.hw[0]))
         if self.mirror:
             frame = cv2.flip(frame, 1)
-        result = None
+        self.detection_result = None
         if self.imgproc is not None:
             if self.detector is None and 'DETECTOR' in self.imgproc:
                 self.detector = self.imgproc['DETECTOR'](**self.imgproc['DETECTOR_PARAMS'])
-            result = self.detector.detect(frame)
+            self.detection_result = self.detector.detect(frame)
             if self.drawer is None and 'DRAWER' in self.imgproc:
                 self.drawer = self.imgproc['DRAWER'](**self.imgproc['DRAWER_OPTS'])
-            if result is not None:
-                self._bgr = self.drawer.draw(result, frame)
+            if self.detection_result is not None:
+                self._bgr = self.drawer.draw(self.detection_result, frame)
         else:
             self._bgr = frame
 

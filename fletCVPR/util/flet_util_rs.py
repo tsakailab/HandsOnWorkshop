@@ -99,6 +99,7 @@ class ftImShow(ft.UserControl): # for RealSense
         self.detector=None
         self.drawer=None
         self.keep_running = keep_running
+        self.detection_result = None
 
     def did_mount(self):
         self.update_timer()
@@ -127,15 +128,15 @@ class ftImShow(ft.UserControl): # for RealSense
         #frame = cv2.resize(frame[0], (self.hw[1],self.hw[0])), cv2.resize(frame[1], (self.hw[1],self.hw[0]))
         if self.mirror:
             frame = frame[0][:,::-1,...], frame[1][:,::-1,...] #cv2.flip(frame, 1)
-        result = None
+        self.detection_result = None
         if self.imgproc is not None:
             if self.detector is None and 'DETECTOR' in self.imgproc:
                 self.detector = self.imgproc['DETECTOR'](**self.imgproc['DETECTOR_PARAMS'])
-            result = self.detector.detect(frame)    # must accept tuple of a bgr image and depth data
+            self.detection_result = self.detector.detect(frame)    # must accept tuple of a bgr image and depth data
             if self.drawer is None and 'DRAWER' in self.imgproc:
                 self.drawer = self.imgproc['DRAWER'](**self.imgproc['DRAWER_OPTS'])
-            if result is not None:
-                self._frame = self.drawer.draw(result, frame)   # must return a pair of images in bgr format
+            if self.detection_result is not None:
+                self._frame = self.drawer.draw(self.detection_result, frame)   # must return a pair of images in bgr format
 
     def build(self):
         return self.controls
