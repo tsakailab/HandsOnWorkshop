@@ -147,8 +147,8 @@ class ftImShow(ft.UserControl): # for RealSense
     def Renew(self):
         self._detect_draw()
         self._src_base64 = _bgr_to_base64(self._frame[0]), _bgr_to_base64(self._frame[1])
-        for cid in self.cids:
-            self.controls[0].controls[cid].src_base64 = self._src_base64[cid]
+        for i, cid in enumerate(self.cids):
+            self.controls[0].controls[i].src_base64 = self._src_base64[cid]
         self.update()
 
     def RenewDetector(self, newparam):
