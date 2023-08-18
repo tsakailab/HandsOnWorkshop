@@ -3,6 +3,8 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import sys
+import requests
+import os
 sys.path.append("../util")
 from flet_util import set_page, ftImShow
 
@@ -16,7 +18,7 @@ args = {'app': {}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
 args.update({'images': ['../dashcam.jpg', '../park.jpg']}) # works if cap.isOpened() is False
 
 
-PageOpts = {'TITLE': "Object Detection (YOLOv8)", 
+PageOpts = {'TITLE': "Object Detection (mediapipe)", 
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': args['padding'],
@@ -25,7 +27,9 @@ PageOpts = {'TITLE': "Object Detection (YOLOv8)",
 
 # defaults
 #detector_params = {'model_asset_path': "./object_detector.tflite", 'score_threshold': 0.3}
-detector_params = {'model_asset_path': "./efficientdet_lite2_float32.tflite", 'score_threshold': 0.3}
+detector_params = {'model_asset_path': "./efficientdet_lite2_fp32.tflite", 
+                   'url': "https://storage.googleapis.com/mediapipe-tasks/object_detector/efficientdet_lite2_fp32.tflite", 
+                   'score_threshold': 0.3}
 drawer_opts = {'bfps': True, 'margin': 5, 'row_size': 20, 'font_size': 1.5, 'font_thickness': 2, 'line_thickness': 2}
 section_opts = {'img_size': args['resolution'], 'keep_running': True,
                 'slider': {'score_threshold': {'width': 400, 'value': int(detector_params['score_threshold']*100), 'min': 1, 'max': 99, 'divisions': 98, 'label': "{value}/100"}}, 
@@ -36,7 +40,15 @@ section_opts = {'img_size': args['resolution'], 'keep_running': True,
 # will be used in flet_util.ftImShow as
 # detector = Detector(**detector_params)
 class Detector():
-    def __init__(self, model_asset_path, score_threshold=0.3):
+    def __init__(self, model_asset_path, url=None, score_threshold=0.3):
+        if url is not None:
+            success = os.path.isfile(model_asset_path)
+            if not success:
+                r = requests.get(url)
+                with open(model_asset_path, "wb") as file:
+                    file.write(r.content)
+                    file.flush()
+
         base_options = mp.tasks.BaseOptions(model_asset_path=model_asset_path)
         options = mp.tasks.vision.ObjectDetectorOptions(base_options=base_options,
                                        score_threshold=score_threshold)

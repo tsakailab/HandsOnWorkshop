@@ -3,6 +3,9 @@ import cv2
 import mediapipe as mp
 import numpy as np
 import sys
+import requests
+import os
+
 sys.path.append("../util")
 from flet_util import set_page, ftImShow
 
@@ -26,7 +29,9 @@ PageOpts = {'TITLE': "Hand Landmarker (mediapipe)",
 
 # defaults
 #detector_params = {'model_asset_path': "./object_detector.tflite", 'score_threshold': 0.3}
-detector_params = {'model_asset_path': "./hand_detector.task", 'num_hands': 2}
+detector_params = {'model_asset_path': "./hand_detector.task", 
+                   'url': "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+                   'num_hands': 2}
 drawer_opts = {'bfps': True, 'margin': 10, 'font_size': 2, 'font_thickness': 2,
                'handedness_text_color': (88, 205, 54)}
 section_opts = {'img_size': args['resolution'], 'keep_running': True,
@@ -37,7 +42,15 @@ section_opts = {'img_size': args['resolution'], 'keep_running': True,
 # will be used in flet_util.ftImShow as
 # detector = Detector(**detector_params)
 class Detector():
-    def __init__(self, model_asset_path, num_hands=2):
+    def __init__(self, model_asset_path, url=None, num_hands=2):
+        if url is not None:
+            success = os.path.isfile(model_asset_path)
+            if not success:
+                r = requests.get(url)
+                with open(model_asset_path, "wb") as file:
+                    file.write(r.content)
+                    file.flush()
+
         base_options = mp.tasks.BaseOptions(model_asset_path=model_asset_path)
         options = mp.tasks.vision.HandLandmarkerOptions(base_options=base_options,
                                        num_hands=num_hands)

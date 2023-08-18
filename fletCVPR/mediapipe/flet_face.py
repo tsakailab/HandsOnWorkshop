@@ -5,6 +5,9 @@ import numpy as np
 from typing import Tuple, Union
 import math
 import sys
+import requests
+import os
+
 sys.path.append("../util")
 from flet_util import set_page, ftImShow
 
@@ -29,6 +32,8 @@ PageOpts = {'TITLE': "Face Detection (mediapipe)",
 # defaults
 #detector_params = {'model_asset_path': "./object_detector.tflite", 'score_threshold': 0.3}
 detector_params = {'model_asset_path': {'face_bbox': "./face_detector.tflite", 'face_mesh': "./facemesh_detector.task"},
+                   'url': {'face_bbox': "https://storage.googleapis.com/mediapipe-models/face_detector/blaze_face_short_range/float16/1/blaze_face_short_range.tflite",
+                           'face_mesh': "https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task"}, 
                    'num_faces': 2, 'mode': 'face_bbox'}
 drawer_opts = {'bfps': True, 
                'face_bbox': {'MARGIN': 10, 'ROW_SIZE': 10, 'FONT_SIZE': 1, 'FONT_THICKNESS': 1, 'TEXT_COLOR': (0,0,255)},
@@ -42,18 +47,35 @@ section_opts = {'img_size': args['resolution'], 'keep_running': True,
 # will be used in flet_util.ftImShow as
 # detector = Detector(**detector_params)
 class Detector():
-    def __init__(self, mode, model_asset_path, num_faces):
+    def __init__(self, mode, model_asset_path, url=None, num_faces=1):
         self.mode = mode # 'face_bbox' or 'face_mesh'
         self.detector = {}
+
+        if url is not None:
+            success = os.path.isfile(model_asset_path['face_bbox'])
+            if not success:
+                r = requests.get(url['face_bbox'], timeout=(3.0, 10.0))
+                with open(model_asset_path['face_bbox'], "wb") as file:
+                    file.write(r.content)
+                    file.flush()
+            success = os.path.isfile(model_asset_path['face_mesh'])
+            if not success:
+                r = requests.get(url['face_mesh'], timeout=(3.0, 10.0))
+                with open(model_asset_path['face_mesh'], "wb") as file:
+                    file.write(r.content)
+                    file.flush()
+
         base_options = mp.tasks.BaseOptions(model_asset_path=model_asset_path['face_bbox'])
         options = mp.tasks.vision.FaceDetectorOptions(base_options=base_options)
         self.detector['face_bbox'] = mp.tasks.vision.FaceDetector.create_from_options(options)
+
         base_options = mp.tasks.BaseOptions(model_asset_path=model_asset_path['face_mesh'])
         options = mp.tasks.vision.FaceLandmarkerOptions(base_options=base_options, 
                                                         output_face_blendshapes=True,
                                                         output_facial_transformation_matrixes=True,
                                                         num_faces=num_faces)
         self.detector['face_mesh'] = mp.tasks.vision.FaceLandmarker.create_from_options(options)
+
 
     # do not change the function name and args
     def detect(self, bgr):
