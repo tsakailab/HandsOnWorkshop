@@ -223,6 +223,7 @@ def main(page: ft.Page):
     # page.on_disconnect = on_disconnect
 
     set_page(page, PageOpts)
+    page.on_close = lambda e: cap.release()
     page.update()
     page.add(contents)
 
