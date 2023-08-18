@@ -86,7 +86,7 @@ class Section():
         self.controls['cap_view'].Renew()
 
     def create(self):
-        self.controls['cap_view'] = ftImShow(self.cap, imgproc=self.imgproc, keep_running=self.keep_running,
+        self.controls['cap_view'] = ftImShow(self.cap, cids=[1, 0], imgproc=self.imgproc, keep_running=self.keep_running,
                                              hw=self.img_size, border_radius=self.border_radius)
         self.controls['sw_mirror'] = ft.Switch(label="Mirror", value=self.controls['cap_view'].mirror, label_position=ft.LabelPosition.LEFT,
                                                on_change=self.set_mirror)
