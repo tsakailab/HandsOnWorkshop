@@ -27,7 +27,7 @@ def bgr_to_base64(bgr):
                 ).decode(base64code)
     return src_base64
 
-class fps_counter():
+class _fps_counter():
     def __init__(self, max_count=10):
         self.fps = 0.0
         self.tm = cv2.TickMeter()
@@ -50,11 +50,13 @@ class fps_counter():
 
 
 class ftImShow(ft.UserControl):
-    def __init__(self, cap, imgproc=None, hw=(480,640), border_radius=ft.border_radius.all(20), keep_running=False):
+    def __init__(self, cap, imgproc=None, hw=(480,640), VideoCapture=cv2.VideoCapture,
+                 border_radius=ft.border_radius.all(20), keep_running=False):
         super().__init__()
         self.cap = cap
         self.imgproc = imgproc
         self.hw = hw
+        self.VideoCapture = VideoCapture
         self.capid = 0
         self.mirror = imgproc['MIRROR'] if imgproc is not None and 'MIRROR' in imgproc else None
         self.images = imgproc['IMAGES'] if imgproc is not None and 'IMAGES' in imgproc else None
@@ -81,7 +83,7 @@ class ftImShow(ft.UserControl):
         self.update_timer()
 
     def update_timer(self):
-        fps_timer = fps_counter()
+        fps_timer = _fps_counter()
         while self.keep_running:
             self._detect_draw()
             if self.drawer is not None and self.drawer.bfps:
@@ -138,11 +140,12 @@ class ftImShow(ft.UserControl):
         #self.drawer = self.imgproc['DRAWER'](**self.imgproc['DRAWER_OPTS'])
         return self
 
-    def SetSource(self, cid):
+    def SetSource(self, cid, VideoCapture=cv2.VideoCapture):
         self.capid = cid
+        self.VideoCapture = VideoCapture
         if self.images is None:
         #if self.cap is not None:
             if self.cap is not None:
                 self.cap.release()
-            self.cap = cv2.VideoCapture(cid)#, cv2.CAP_DSHOW)
+            self.cap = self.VideoCapture(cid)#, cv2.CAP_DSHOW)
         return self
