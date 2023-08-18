@@ -81,7 +81,7 @@ class _fps_counter():
 
 class ftImShow(ft.UserControl): # for RealSense
     def __init__(self, cap, imgproc=None, hw=(480,640), VideoCapture=rsVideoCapture,
-                 border_radius=ft.border_radius.all(20), keep_running=False):
+                 border_radius=ft.border_radius.all(20), keep_running=False, cids=(0,1)):
         super().__init__()
         self.cap = cap
         self.imgproc = imgproc
@@ -91,11 +91,13 @@ class ftImShow(ft.UserControl): # for RealSense
         self.mirror = imgproc['MIRROR'] if imgproc is not None and 'MIRROR' in imgproc else None
         #self.images = imgproc['IMAGES'] if imgproc is not None and 'IMAGES' in imgproc else None
         self._frame = np.zeros((hw[0],hw[1],3), np.uint8), np.zeros((hw[0],hw[1]), np.uint16)
+        self.cids = cids
         self._src_base64 = _bgr_to_base64(self._frame[0]), _bgr_to_base64(cv2.cvtColor(self._frame[1], cv2.COLOR_GRAY2BGR))
-        self.controls.append(ft.Row([ft.Image(src_base64=self._src_base64[0], width=hw[1], height=hw[0],
-                                     fit=ft.ImageFit.CONTAIN, border_radius=border_radius),
-                                     ft.Image(src_base64=self._src_base64[1], width=hw[1], height=hw[0],
+        self.controls.append(ft.Row([ft.Image(src_base64=self._src_base64[cids[0]], width=hw[1], height=hw[0],
                                      fit=ft.ImageFit.CONTAIN, border_radius=border_radius)]))
+        for cid in cids[1:]:
+            self.controls[0].append(ft.Image(src_base64=self._src_base64[cid], width=hw[1], height=hw[0],
+                                    fit=ft.ImageFit.CONTAIN, border_radius=border_radius))
         self.detector=None
         self.drawer=None
         self.keep_running = keep_running
@@ -112,10 +114,11 @@ class ftImShow(ft.UserControl): # for RealSense
                 fps = fps_timer.count_get()
                 self._frame[0] = cv2.putText(self._frame[0].copy(), 'FPS: {:.2f}'.format(fps), (10,30), cv2.FONT_HERSHEY_SIMPLEX,
                         1.0, (128,128,0), thickness=1)
-            self._src_base64 = _bgr_to_base64(self._frame[0]), _bgr_to_base64(self._frame[1])
-            self.controls[0].controls[0].src_base64 = self._src_base64[0]
-            self.controls[0].controls[1].src_base64 = self._src_base64[1]
-            self.update()
+            # self._src_base64 = _bgr_to_base64(self._frame[0]), _bgr_to_base64(self._frame[1])
+            # self.controls[0].controls[0].src_base64 = self._src_base64[0]
+            # self.controls[0].controls[1].src_base64 = self._src_base64[1]
+            # self.update()
+            self.Renew()
         if not self.keep_running:
             self.Renew()
 
@@ -143,9 +146,9 @@ class ftImShow(ft.UserControl): # for RealSense
 
     def Renew(self):
         self._detect_draw()
-        self._src_base64 = _bgr_to_base64(self._frame[0]), _bgr_to_base64(cv2.cvtColor(self._frame[1], cv2.COLOR_GRAY2BGR))
-        self.controls[0].src_base64 = self._src_base64[0]
-        self.controls[1].src_base64 = self._src_base64[1]
+        self._src_base64 = _bgr_to_base64(self._frame[0]), _bgr_to_base64(self._frame[1])
+        for cid in self.cids:
+            self.controls[0].controls[cid].src_base64 = self._src_base64[cid]
         self.update()
 
     def RenewDetector(self, newparam):
