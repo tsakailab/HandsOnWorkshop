@@ -14,7 +14,7 @@ resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,
 CAMERAS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
 
 args = {'app': {}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
-        'resolution': resols['nHD'], 'padding': 10, 'cameras': CAMERAS,
+        'resolution': (480,640), 'padding': 10, 'cameras': CAMERAS,
         'images': None}
 args.update({'images': ['../dashcam.jpg', '../park.jpg']}) # works if cap.isOpened() is False
 
@@ -23,7 +23,7 @@ PageOpts = {'TITLE': "Color and Depth Viewer (RealSense)",
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': args['padding'],
-        'WINDOW_HW': (args['resolution'][0]+240, args['resolution'][1]+2*args['padding']), 
+        'WINDOW_HW': (args['resolution'][0]*2+240, args['resolution'][1]*2+2*args['padding']), 
         'WINDOW_TOP_LEFT': (50,100), '_WINDOW_TOP_LEFT_INCR': False}
 
 # defaults
@@ -60,7 +60,7 @@ class Drawer():
 
     # Do not change the function name. The first and secont args are the result and the target bgr image.
     def draw(self, detection_result, bgr_and_depth):
-        return bgr_and_depth[0], self.depth_to_color(bgr_and_depth[1])
+        return [bgr_and_depth[0], self.depth_to_color(bgr_and_depth[1])]
 
 
 #### (3/3) Define how to display in a page ####
@@ -101,7 +101,7 @@ class Section():
                         padding=self.padding,
                         border_radius = ft.border_radius.all(self.border_radius),
                         content=ft.Column([
-                            ft.Row([self.controls['cap_view'][0], self.controls['cap_view'][1]]), 
+                            self.controls['cap_view'], 
                             ft.Row([self.controls['sw_mirror']])
                         ],
                         tight=True, spacing=0
