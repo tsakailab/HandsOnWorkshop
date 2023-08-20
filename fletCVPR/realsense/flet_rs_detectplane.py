@@ -14,8 +14,7 @@ resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,
 CAMERAS = ["0", "1", "2", "3"]
 
 args = {'app': {}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
-        'resolution': resols['qHD'], 'padding': 10, 
-        'cameras': CAMERAS, 'frame_hw': resols['HD'], 
+        'resolution': (480,640), 'padding': 10, 'cameras': CAMERAS,
         'images': None}
 
 PageOpts = {'TITLE': "Color and Depth Viewer / Plane Detection (RealSense)", 
@@ -27,9 +26,9 @@ PageOpts = {'TITLE': "Color and Depth Viewer / Plane Detection (RealSense)",
 
 # defaults
 detector_params = {'rtol': 0.03}
-drawer_opts = {'bfps': True, 'min_depth': 0, 'max_depth': 5000, 'bblend': False}
+drawer_opts = {'bfps': True, 'min_depth': 0, 'max_depth': 6, 'bblend': False}
 section_opts = {'img_size': args['resolution'], 'keep_running': True,
-#                'slider': {'range': {'width': 400, 'value': int(3000), 'min': 500, 'max': 10000, 'divisions': 95, 'label': "{value}mm"}}, 
+                'max_depth': {'range': {'width': 400, 'value': drawer_opts['max_depth'], 'min': 1, 'max': 10, 'divisions': 9, 'label': "{value}m"}}, 
                 'bottom_margin': 40, 'elevation': 20, 'padding':10, 'border_radius': 20}
 
 r = 30
@@ -72,7 +71,7 @@ class Detector():
         return X, Y
     
     def avelage_filter(self, points, index, kernel_size):
-        return points[index[0]-kernel_size:index[0]+kernel_size, index[1]-kernel_size:index[1]+kernel_size].median((0, 1))
+        return points[index[0]-kernel_size:index[0]+kernel_size, index[1]-kernel_size:index[1]+kernel_size].mean((0, 1))
 
     def split_3_points(self, points, index, average_kernel_size=1):
         return np.stack(
@@ -159,6 +158,10 @@ class Section():
                                                on_change=self.set_mirror)
         self.controls['sw_bblend'] = ft.Switch(label="Plane", value=False, label_position=ft.LabelPosition.LEFT,
                                                on_change=self.set_bblend)
+        self.controls['max_depth'] = ft.Slider(
+                            on_change=lambda e: self.controls['cap_view'].RenewDrawer({'max_depth': e.control.value}).Renew(),
+                            **self.slider['max_depth']
+                        ),
 
         section = ft.Container(
             margin=ft.margin.only(bottom=self.bottom_margin),
@@ -172,7 +175,8 @@ class Section():
                         content=ft.Column([
                             self.controls['cap_view'], 
                             ft.Row([self.controls['sw_mirror'], ft.VerticalDivider(), self.controls['sw_bblend']])
-                        ],
+                            self.controls['max_depth']
+                            ],
                         tight=True, spacing=0
                         ),
                     )
