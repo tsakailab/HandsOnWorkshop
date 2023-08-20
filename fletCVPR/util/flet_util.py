@@ -35,9 +35,13 @@ class cvVideoCapture():
         self.fps = fps
         if os.name == "nt": 
             self.cap = cv2.VideoCapture(capid, cv2.CAP_DSHOW)
+        elif os.name == "posix":
+            self.cap = cv2.VideoCapture(capid)
+            self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
+            #self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('Y','U','Y','2'))
         else:
             self.cap = cv2.VideoCapture(capid)
-        
+
         self.set(_CAP_PROP_FRAME_WIDTH, self.hw[1])
         self.set(_CAP_PROP_FRAME_HEIGHT, self.hw[0])
         self.set(_CAP_PROP_FPS, self.fps)
@@ -51,9 +55,9 @@ class cvVideoCapture():
 
     def set(self, src, dst):
         #_decode_forcc = lambda v: "".join([chr((int(v) >> 8 * i) & 0xFF) for i in range(4)])
-        #cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
-        #cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*[c for c in fourcc]))
+        #self.cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*[c for c in fourcc]))
         return self.cap.set(src, dst)
+
 
     def get(self, src):
         return self.cap.get(src)
