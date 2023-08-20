@@ -1,4 +1,3 @@
-
 def set_page(page, PageOpts):
     page.title = PageOpts['TITLE']
     page.theme_mode = PageOpts['THEME_MODE']
@@ -21,6 +20,44 @@ import base64
 import numpy as np
 import cv2
 import os
+
+_CAP_PROP_FRAME_WIDTH = cv2.CAP_PROP_FRAME_WIDTH
+_CAP_PROP_FRAME_HEIGHT = cv2.CAP_PROP_FRAME_HEIGHT
+_CAP_PROP_FPS = cv2.CAP_PROP_FPS
+
+class cvVideoCapture():
+    def __init__(self, capid=0, width=None, height=None, fps=30, hw=(480,640)):
+        self.cid = capid
+        self.cap = None
+        self.hw = [hw[0], hw[1]]
+        if height is not None: self.hw[0] = height
+        if width is not None: self.hw[1] = width
+        self.fps = fps
+        if os.name == "nt": 
+            self.cap = cv2.VideoCapture(capid, cv2.CAP_DSHOW)
+        else:
+            self.cap = cv2.VideoCapture(capid)
+        
+        self.set(_CAP_PROP_FRAME_WIDTH, self.hw[1])
+        self.set(_CAP_PROP_FRAME_HEIGHT, self.hw[0])
+        self.set(_CAP_PROP_FPS, self.fps)
+
+    def isOpened(self):
+        return self.cap.isOpened()
+    def read(self, **kwargs):
+        return self.cap.read(**kwargs)
+    def release(self):
+        return self.cap.release()
+
+    def set(self, src, dst):
+        #_decode_forcc = lambda v: "".join([chr((int(v) >> 8 * i) & 0xFF) for i in range(4)])
+        #cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc('M','J','P','G'))
+        #cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*[c for c in fourcc]))
+        return self.cap.set(src, dst)
+
+    def get(self, src):
+        return self.cap.get(src)
+
 
 # macros
 imgfmt, base64code = '.jpg', 'ascii'
@@ -144,12 +181,72 @@ class ftImShow(ft.UserControl):
         #self.drawer = self.imgproc['DRAWER'](**self.imgproc['DRAWER_OPTS'])
         return self
 
-    def SetSource(self, cid, VideoCapture=cv2.VideoCapture):
+    def SetSource(self, cid, VideoCapture=cvVideoCapture):
         self.capid = cid
         self.VideoCapture = VideoCapture
         if self.images is None:
         #if self.cap is not None:
             if self.cap is not None:
+                w, h = self.cap.get(_CAP_PROP_FRAME_WIDTH), self.cap.get(_CAP_PROP_FRAME_HEIGHT)
+                fps = self.cap.get(_CAP_PROP_FPS)
                 self.cap.release()
-            self.cap = self.VideoCapture(cid)#, cv2.CAP_DSHOW)
+            self.cap = self.VideoCapture(cid, w, h, fps)
+
         return self
+
+
+
+
+import itertools
+def _show_param(cap):
+    app_ids = [
+        # (cv2.CAP_ANY, 'CAP_ANY'),
+        (cv2.CAP_DSHOW, 'CAP_DSHOW'),
+        (cv2.CAP_MSMF, 'CAP_MSMF'),
+        (cv2.CAP_V4L2, 'CAP_V4L2'),
+    ]
+    fourcc_list = [
+        (cv2.VideoWriter_fourcc('M', 'J', 'P', 'G'), 'MJPG'),
+        (cv2.VideoWriter_fourcc('Y', 'U', 'Y', 'V'), 'YUYV'),
+        (cv2.VideoWriter_fourcc('Y', 'U', 'Y', '2'), 'YUY2'),
+        (cv2.VideoWriter_fourcc('H', '2', '6', '4'), 'H264'),
+        (cv2.VideoWriter_fourcc('B', 'G', 'R', '3'), 'BGR3'),
+    ]
+    frame_list = [(1920, 1080), (1280, 1024), (1280, 720), (800, 600), (640, 480)]
+    fps_list = [60, 30, 24, 20, 15, 10, 5, 2, 1]
+
+    for dev_id, api_id in itertools.product(range(10), app_ids):
+        cap = cv2.VideoCapture(dev_id, api_id[0])
+        ret = cap.isOpened()
+        if ret is False:
+            continue
+
+        backend = cap.getBackendName()
+        print("Camera #%d (%s : %s) :" % (dev_id, api_id[1], backend))
+
+        for fourcc in fourcc_list:
+            cap.set(cv2.CAP_PROP_FOURCC, fourcc[0])
+            ret_fourcc = int(cap.get(cv2.CAP_PROP_FOURCC))
+            if fourcc[0] != ret_fourcc:
+                continue
+
+            for frame in frame_list:
+                cap.set(cv2.CAP_PROP_FRAME_WIDTH, frame[0])
+                cap.set(cv2.CAP_PROP_FRAME_HEIGHT, frame[1])
+                ret_w = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+                ret_h = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+                if frame[0] != ret_w or frame[1] != ret_h:
+                    continue
+
+                for fps in fps_list:
+                    cap.set(cv2.CAP_PROP_FPS, fps)
+                    ret_fps = int(cap.get(cv2.CAP_PROP_FPS) + 0.5)
+                    if fps != ret_fps:
+                        continue
+
+                    print('  Frame: %4d x %4d , FPS: %3d , FourCC: %s' % 
+                            (ret_w, ret_h, ret_fps, fourcc[1]))
+
+
+
+
