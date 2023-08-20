@@ -21,14 +21,14 @@ PageOpts = {'TITLE': "Color and Depth Viewer / Plane Detection (RealSense)",
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': args['padding'],
-        'WINDOW_HW': (args['resolution'][0]*2+240, args['resolution'][1]*2+4*args['padding']), 
+        'WINDOW_HW': (args['resolution'][0]*2+240, args['resolution'][1]*2+6*args['padding']), 
         'WINDOW_TOP_LEFT': (50,100), '_WINDOW_TOP_LEFT_INCR': False}
 
 # defaults
 detector_params = {'rtol': 0.03}
 drawer_opts = {'bfps': True, 'min_depth': 0, 'max_depth': 6, 'bblend': False}
 section_opts = {'img_size': args['resolution'], 'keep_running': True,
-                'max_depth': {'range': {'width': 400, 'value': drawer_opts['max_depth'], 'min': 1, 'max': 10, 'divisions': 9, 'label': "{value}m"}}, 
+                'slider': {'max_depth': {'width': 400, 'value': drawer_opts['max_depth'], 'min': 1, 'max': 10, 'divisions': 9, 'label': "{value}m"}}, 
                 'bottom_margin': 40, 'elevation': 20, 'padding':10, 'border_radius': 20}
 
 r = 30
@@ -150,6 +150,9 @@ class Section():
     def set_bblend(self, dummy):
         self.controls['cap_view'].drawer.bblend = self.controls['sw_bblend'].value
         self.controls['cap_view'].Renew()
+    def set_max_depth(self, dummy):
+        self.controls['cap_view'].drawer.max_depth = self.controls['max_depth'].value
+        self.controls['cap_view'].Renew()
 
     def create(self):
         self.controls['cap_view'] = ftImShow(self.cap, imgproc=self.imgproc, keep_running=self.keep_running,
@@ -158,10 +161,7 @@ class Section():
                                                on_change=self.set_mirror)
         self.controls['sw_bblend'] = ft.Switch(label="Plane", value=False, label_position=ft.LabelPosition.LEFT,
                                                on_change=self.set_bblend)
-        self.controls['max_depth'] = ft.Slider(
-                            on_change=lambda e: self.controls['cap_view'].RenewDrawer({'max_depth': e.control.value}).Renew(),
-                            **self.slider['max_depth']
-                        ),
+        self.controls['max_depth'] = ft.Slider(on_change=self.set_max_depth, **self.slider['max_depth'])
 
         section = ft.Container(
             margin=ft.margin.only(bottom=self.bottom_margin),
@@ -174,7 +174,7 @@ class Section():
                         border_radius = ft.border_radius.all(self.border_radius),
                         content=ft.Column([
                             self.controls['cap_view'], 
-                            ft.Row([self.controls['sw_mirror'], ft.VerticalDivider(), self.controls['sw_bblend']])
+                            ft.Row([self.controls['sw_mirror'], ft.VerticalDivider(), self.controls['sw_bblend']]),
                             self.controls['max_depth']
                             ],
                         tight=True, spacing=0
