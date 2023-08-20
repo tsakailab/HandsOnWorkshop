@@ -3,15 +3,16 @@ import cv2
 from ultralytics import YOLO
 import sys
 sys.path.append("../util")
-from flet_util import set_page, ftImShow
+from flet_util import set_page, ftImShow, cvVideoCapture
 
 
 resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,1024), 
           'HD': (720,1280), 'FWXGA': (768,1366), 'HD+': (900,1600), 'FHD': (1080,1920)}
-CAMERAS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
+CAMERAS = ["0", "1", "2", "3"]
 
 args = {'app': {}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
-        'resolution': resols['qHD'], 'padding': 10, 'cameras': CAMERAS,
+        'resolution': resols['qHD'], 'padding': 10, 
+        'cameras': CAMERAS, 'frame_hw': resols['HD'], 
         'images': None}
 args.update({'images': ['../dashcam.jpg', '../park.jpg']}) # works if cap.isOpened() is False
 
@@ -150,13 +151,14 @@ def main(page: ft.Page):
     if len(sys.argv) > 1: # force to use the specified camera
         imgproc['IMAGES'] = None
         section_opts['keep_running'] = True
-        cap = cv2.VideoCapture(int(sys.argv[1]))
+        cap = cvVideoCapture(int(sys.argv[1]), hw=args['frame_hw'])
         args['cameras'] = sys.argv[2:]
     elif imgproc['IMAGES'] is None:
-        cap = cv2.VideoCapture(0)
+        cap = cvVideoCapture(0, hw=args['frame_hw'])
     else: # use IMAGES
         imgproc['MIRROR'] = False
         section_opts['keep_running'] = False
+    #print(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT), int(cap.get(cv2.CAP_PROP_FPS) + 0.5))
 
     section = Section(cap, imgproc=imgproc, cameras=args['cameras'], **section_opts)
     contents = section.create()
@@ -169,7 +171,7 @@ def main(page: ft.Page):
     # page.on_disconnect = on_disconnect
 
     set_page(page, PageOpts)
-    page.on_window_event = lambda e: (cap.release(), page.window_destroy()) if e.data == "close" else None
+    page.on_window_event = lambda e: (cap.release() if cap is not None else None, cv2.waitKey(1000), page.window_destroy()) if e.data == "close" else None
     page.update()
     page.add(contents)
 

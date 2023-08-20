@@ -17,7 +17,7 @@ args = {'app': {}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
 args.update({'images': ['../dashcam.jpg', '../park.jpg']}) # works if cap.isOpened() is False
 
 
-PageOpts = {'TITLE': "Object Detection (YOLOv8)", 
+PageOpts = {'TITLE': "Object Classification (YOLOv8)", 
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': args['padding'],
@@ -25,8 +25,8 @@ PageOpts = {'TITLE': "Object Detection (YOLOv8)",
         'WINDOW_TOP_LEFT': (50,100), '_WINDOW_TOP_LEFT_INCR': False}
 
 # defaults
-detector_params = {'modelname': "yolov8n", 'imgsz': args['resolution'][1], 'conf': 0.25, 'iou': 0.7}
-drawer_opts = {'bfps': True}
+detector_params = {'modelname': "yolov8n-cls", 'imgsz': args['resolution'][1], 'conf': 0.25, 'iou': 0.7}
+drawer_opts = {'bfps': False}
 section_opts = {'img_size': args['resolution'], 'keep_running': True,
                 'slider': {'conf': {'width': 400, 'value': int(detector_params['conf']*100), 'min': 1, 'max': 99, 'divisions': 98, 'label': "{value}/100"}}, 
                 'bottom_margin': 40, 'elevation': 20, 'padding':10, 'border_radius': 20}
@@ -118,18 +118,18 @@ class Section():
                         ),
                     )
                 ),
-                ft.Container(
-                    bgcolor=ft.colors.WHITE24,
-                    padding=self.padding,
-                    border_radius=ft.border_radius.all(self.border_radius),
-                    content=ft.Column([
-                        ft.Slider(
-                            on_change=lambda e: self.controls['cap_view'].RenewDetector({'conf': e.control.value/100}).Renew(),
-                            **self.slider['conf']
-                        ),
-                    ]
-                    ),
-                )
+                # ft.Container(
+                #     bgcolor=ft.colors.WHITE24,
+                #     padding=self.padding,
+                #     border_radius=ft.border_radius.all(self.border_radius),
+                #     content=ft.Column([
+                #         ft.Slider(
+                #             on_change=lambda e: self.controls['cap_view'].RenewDetector({'conf': e.control.value/100}).Renew(),
+                #             **self.slider['conf']
+                #         ),
+                #     ]
+                #     ),
+                # )
             ],
                 alignment=ft.MainAxisAlignment.CENTER,
             )
