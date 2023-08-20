@@ -11,24 +11,23 @@ import matplotlib.pyplot as plt
 
 resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,1024), 
           'HD': (720,1280), 'FWXGA': (768,1366), 'HD+': (900,1600), 'FHD': (1080,1920)}
-CAMERAS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
+CAMERAS = ["0", "1", "2", "3"]
 
 args = {'app': {}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
-        'resolution': (480,640), 'padding': 10, 'cameras': CAMERAS,
+        'resolution': resols['qHD'], 'padding': 10, 
+        'cameras': CAMERAS, 'frame_hw': resols['HD'], 
         'images': None}
-args.update({'images': ['../dashcam.jpg', '../park.jpg']}) # works if cap.isOpened() is False
 
-
-PageOpts = {'TITLE': "Color and Depth Viewer (RealSense)", 
+PageOpts = {'TITLE': "Color and Depth Viewer / Plane Detection (RealSense)", 
         'THEME_MODE': ft.ThemeMode.LIGHT, 'WPA': False,
         'VERTICAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 'HORIZONTAL_ALIGNMENT': ft.MainAxisAlignment.CENTER, 
         'PADDING': args['padding'],
-        'WINDOW_HW': (args['resolution'][0]*2+240, args['resolution'][1]*2+2*args['padding']), 
+        'WINDOW_HW': (args['resolution'][0]*2+240, args['resolution'][1]*2+4*args['padding']), 
         'WINDOW_TOP_LEFT': (50,100), '_WINDOW_TOP_LEFT_INCR': False}
 
 # defaults
-detector_params = {}
-drawer_opts = {'bfps': True, 'min_depth': None, 'max_depth': None}
+detector_params = {'rtol': 0.03}
+drawer_opts = {'bfps': True, 'min_depth': 0, 'max_depth': 5000, 'bblend': False}
 section_opts = {'img_size': args['resolution'], 'keep_running': True,
 #                'slider': {'range': {'width': 400, 'value': int(3000), 'min': 500, 'max': 10000, 'divisions': 95, 'label': "{value}mm"}}, 
                 'bottom_margin': 40, 'elevation': 20, 'padding':10, 'border_radius': 20}
@@ -45,6 +44,7 @@ MarkerPointsCoordinates = ([
 # detector = Detector(**detector_params)
 class Detector():
     def __init__(self, **kwargs):
+        self.rtol = 0.05
         self.__dict__.update(kwargs)
         self.focal_length = [self.intr.fx, self.intr.fy]
         cx, cy = self.intr.ppx, self.intr.ppy # width*0.5, height*0.5
@@ -58,7 +58,7 @@ class Detector():
         X, Y = self.Zuv_to_XY(Z)
         points = np.stack((X, Y, Z), axis=-1)
         p3 = self.split_3_points(points, MarkerPointsCoordinates, average_kernel_size=5)
-        th = p3[0, -1] * 0.05
+        th = p3[0, -1] * self.rtol
 
         # compute a unit normal vector
         normal = self.compute_normal_vector(p3)
@@ -72,7 +72,7 @@ class Detector():
         return X, Y
     
     def avelage_filter(self, points, index, kernel_size):
-        return points[index[0]-kernel_size:index[0]+kernel_size, index[1]-kernel_size:index[1]+kernel_size].mean((0, 1))
+        return points[index[0]-kernel_size:index[0]+kernel_size, index[1]-kernel_size:index[1]+kernel_size].median((0, 1))
 
     def split_3_points(self, points, index, average_kernel_size=1):
         return np.stack(
@@ -90,13 +90,14 @@ class Detector():
 # will be used in flet_util.ftImshow as 
 # bgr = Drawer(**draw_opts).draw(result, bgr)
 class Drawer():
-    def __init__(self, min_depth=None, max_depth=None, colormap=cv2.COLORMAP_JET, **kwargs):
+    def __init__(self, min_depth=None, max_depth=None, colormap=cv2.COLORMAP_OCEAN, **kwargs):
         self.bfps = True
+        self.bblend = False
         self.min_depth = min_depth
         self.max_depth = max_depth
         self.colormap = colormap
         self.__dict__.update(kwargs)
-        self.depth_to_color = lambda depth: cv2.applyColorMap(cv2.normalize(depth, None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U), colormap)
+        self.depth_to_color = lambda depth: cv2.applyColorMap(cv2.normalize(-np.clip(depth, self.min_depth/self.scale, self.max_depth/self.scale), None, 0, 255, cv2.NORM_MINMAX, dtype=cv2.CV_8U), colormap)
 
         self.point_parameters = {
             "color":(255, 0, 0),
@@ -104,6 +105,9 @@ class Drawer():
         }
     # Do not change the function name. The first and secont args are the result and the target bgr image.
     def draw(self, detection_result, bgr_and_depth):
+        if not self.bblend:
+            return [bgr_and_depth[0], self.depth_to_color(bgr_and_depth[1])]
+
         dist_index = detection_result["plane_index"]
         bgr = bgr_and_depth[0]
         self.mask = np.zeros(bgr.shape)
@@ -129,6 +133,7 @@ class Section():
         self.imgproc = imgproc
         self.imgproc["DETECTOR_PARAMS"]["intr"] = self.cap.intr
         self.imgproc["DETECTOR_PARAMS"]["scale"] = self.cap.scale
+        self.imgproc["DRAWER_OPTS"]["scale"] = self.cap.scale
         self.img_size = (480,640)
         self.cameras = ["0"]
         self.keep_running = False
@@ -143,12 +148,17 @@ class Section():
     def set_mirror(self, dummy):
         self.controls['cap_view'].mirror = self.controls['sw_mirror'].value
         self.controls['cap_view'].Renew()
+    def set_bblend(self, dummy):
+        self.controls['cap_view'].drawer.bblend = self.controls['sw_bblend'].value
+        self.controls['cap_view'].Renew()
 
     def create(self):
         self.controls['cap_view'] = ftImShow(self.cap, imgproc=self.imgproc, keep_running=self.keep_running,
                                              hw=self.img_size, border_radius=self.border_radius, cids=[0, 1])
         self.controls['sw_mirror'] = ft.Switch(label="Mirror", value=self.controls['cap_view'].mirror, label_position=ft.LabelPosition.LEFT,
                                                on_change=self.set_mirror)
+        self.controls['sw_bblend'] = ft.Switch(label="Plane", value=False, label_position=ft.LabelPosition.LEFT,
+                                               on_change=self.set_bblend)
 
         section = ft.Container(
             margin=ft.margin.only(bottom=self.bottom_margin),
@@ -161,7 +171,7 @@ class Section():
                         border_radius = ft.border_radius.all(self.border_radius),
                         content=ft.Column([
                             self.controls['cap_view'], 
-                            ft.Row([self.controls['sw_mirror']])
+                            ft.Row([self.controls['sw_mirror'], ft.VerticalDivider(), self.controls['sw_bblend']])
                         ],
                         tight=True, spacing=0
                         ),
@@ -199,7 +209,8 @@ def main(page: ft.Page):
     # page.on_disconnect = on_disconnect
 
     set_page(page, PageOpts)
-    page.on_window_event = lambda e: (cap.release(), page.window_destroy()) if e.data == "close" else None
+    page.on_window_event = lambda e: (cap.release() if cap is not None else None, cv2.waitKey(1000), page.window_destroy()) if e.data == "close" else None
+    #page.on_window_event = lambda e: (cap.release(), page.window_destroy()) if e.data == "close" else None
     page.update()
     page.add(contents)
 
