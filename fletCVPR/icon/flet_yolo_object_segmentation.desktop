@@ -1,0 +1,21 @@
+[Desktop Entry]
+# "Application", "Link" or "Directory"
+Type=Application
+
+# The version of the Desktop Entry Specification
+Version=1.0
+
+# The name of the application
+Name=物体検出
+
+# A comment which will be used as a tooltip
+Comment=物体領域の検出・識別
+
+# The path to the folder in which the executable is run
+Path=/home/ubuntu/HandsOnWorkshop/fletCVPR/yolo
+
+# The executable of the application, possibly with arguments
+Exec=python3 /home/ubuntu/HandsOnWorkshop/fletCVPR/yolo/flet_yolo_segmentation.py 0 0
+
+# The icon to display
+Icon=/home/ubuntu/HandsOnWorkshop/fletCVPR/icon/camera_ai_icon.png

@@ -1,0 +1,21 @@
+[Desktop Entry]
+# "Application", "Link" or "Directory"
+Type=Application
+
+# The version of the Desktop Entry Specification
+Version=1.0
+
+# The name of the application
+Name=顔
+
+# A comment which will be used as a tooltip
+Comment="顔を見つけて調べます"
+
+# The path to the folder in which the executable is run
+Path=/home/ubuntu/HandsOnWorkshop/fletCVPR/mediapipe
+
+# The executable of the application, possibly with arguments
+Exec=python3 /home/ubuntu/HandsOnWorkshop/fletCVPR/mediapipe/flet_face.py 0 0
+
+# The icon to display
+Icon=/home/ubuntu/HandsOnWorkshop/fletCVPR/icon/camera_ai_icon.png

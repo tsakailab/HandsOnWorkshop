@@ -1,0 +1,21 @@
+[Desktop Entry]
+# "Application", "Link" or "Directory"
+Type=Application
+
+# The version of the Desktop Entry Specification
+Version=1.0
+
+# The name of the application
+Name=画像認識の\n手作りに挑戦！
+
+# A comment which will be used as a tooltip
+Comment=単純パーセプトロンの原理を学ぼう
+
+# The path to the folder in which the executable is run
+Path=/home/ubuntu/HandsOnWorkshop/fletCVPR
+
+# The executable of the application, possibly with arguments
+Exec=python3 /home/ubuntu/HandsOnWorkshop/fletCVPR/flet_pixel_perceptron_challenge.py
+
+# The icon to display
+Icon=/home/ubuntu/HandsOnWorkshop/fletCVPR/icon/camera_ai_icon.png
