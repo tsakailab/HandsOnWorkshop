@@ -12,7 +12,7 @@ resols = {'nHD': (360,640), 'FWVGA': (480,854), 'qHD': (540,960), 'WSVGA': (576,
 CAMERAS = ["0", "1", "2", "3"]
 
 args = {'app': {}, # {'view': ft.WEB_BROWSER}, #{'view': ft.FLET_APP},
-        'resolution': resols['qHD'], 'padding': 10, 
+        'resolution': resols['HD'], 'padding': 10, 
         'cameras': CAMERAS, 'frame_hw': resols['HD'], 
         'images': None}
 #args.update({'images': ['dashcam.jpg', 'park.jpg']}) # works if cap.isOpened() is False
@@ -122,7 +122,6 @@ class Drawer():
 #### (3/3) Define how to display in a page ####
 # you will use this as
 # contents = Section(cap, imgproc=imgproc, **section_opts).create()
-CAMERAS = ["0", "1", "2", "3", "4", "5", "6", "7", "8"]
 class Section():
     def __init__(self, cap=None, imgproc=None, **kwargs):
         self.cap = cap
@@ -165,7 +164,7 @@ class Section():
     def create(self):
         self.controls['cap_view'] = ftImShow(self.cap, imgproc=self.imgproc, keep_running=self.keep_running,
                                              hw=self.img_size, border_radius=self.border_radius)
-        ddlist = CAMERAS if self.controls['cap_view'].images is None else self.controls['cap_view'].images
+        ddlist = self.cameras if self.controls['cap_view'].images is None else self.controls['cap_view'].images
         self.controls['dd'] = ft.Dropdown(label="Camera/Image", width=256, 
                         options=[ft.dropdown.Option(c) for c in ddlist],
                         on_change=self.set_cap)
@@ -243,7 +242,7 @@ def main(page: ft.Page):
         section_opts['keep_running'] = False
     #print(cap.get(cv2.CAP_PROP_FRAME_WIDTH), cap.get(cv2.CAP_PROP_FRAME_HEIGHT), int(cap.get(cv2.CAP_PROP_FPS) + 0.5))
 
-    section = Section(cap, imgproc=imgproc, **section_opts)
+    section = Section(cap, imgproc=imgproc, cameras=args['cameras'], **section_opts)
     contents = section.create()
 
     # def on_disconnect( _: ft.ControlEvent):
