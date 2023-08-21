@@ -15,7 +15,7 @@ Comment=深度画像の表示と平面検出
 Path=/home/ubuntu/HandsOnWorkshop/fletCVPR/realsense
 
 # The executable of the application, possibly with arguments
-Exec=python3 /home/ubuntu/HandsOnWorkshop/fletCVPR/yolo/flet_rs_detectplane.py 0 0
+Exec=python3 /home/ubuntu/HandsOnWorkshop/fletCVPR/realsense/flet_rs_detectplane.py
 
 # The icon to display
 Icon=/home/ubuntu/HandsOnWorkshop/fletCVPR/icon/camera_ai_icon.png
