@@ -12,3 +12,6 @@
   - [SSII2023 プログラム](https://ssii.jp/ssii/files/2023/SSII2023_ProgramGuide.pdf)
   - [MIRU2022 プログラム](https://sites.google.com/view/miru2022/program)
   - [SSII2022 プログラム](https://ssii.jp/ssii/files/2022/SSII2022_ProgramGuide.pdf)
+- [Google検索](https://www.google.com/?hl=ja)
+- [Google翻訳](https://translate.google.co.jp/?hl=ja)
+- [weblio英和辞典・和英辞典](https://ejje.weblio.jp/)
