@@ -7,3 +7,8 @@
 - 内容：講演・実習「ステレオ視・画像認識について」  
   　　　質疑応答・グループディスカッション「アプリを提案してみよう」
 - 参加対象：中学生
+- 参考資料
+  - [MIRU2023 プログラム](http://cvim.ipsj.or.jp/MIRU2023/program/)
+  - [SSII2023 プログラム](https://ssii.jp/ssii/files/2023/SSII2023_ProgramGuide.pdf)
+  - [MIRU2022 プログラム](https://sites.google.com/view/miru2022/program)
+  - [SSII2022 プログラム](https://ssii.jp/ssii/files/2022/SSII2022_ProgramGuide.pdf)
