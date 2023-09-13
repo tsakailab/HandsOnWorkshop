@@ -170,7 +170,7 @@ class Section():
                         on_change=self.set_cap)
         self.controls['sw_mirror'] = ft.Switch(label="Mirror", value=False, label_position=ft.LabelPosition.LEFT,
                                                on_change=self.set_mirror)
-        self.controls['sw_bblend'] = ft.Switch(label="Sliency", value=False, label_position=ft.LabelPosition.LEFT,
+        self.controls['sw_bblend'] = ft.Switch(label="Saliency", value=False, label_position=ft.LabelPosition.LEFT,
                                                on_change=self.set_bblend)
         self.controls['sw_bcont'] = ft.Switch(label="Contour", value=False, label_position=ft.LabelPosition.LEFT,
                                               on_change=self.set_bcont)
