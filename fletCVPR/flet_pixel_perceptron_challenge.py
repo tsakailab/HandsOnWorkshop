@@ -364,5 +364,7 @@ def main(page: ft.Page):
         vertical_alignment=ft.CrossAxisAlignment.START)
     )
 
-ft.app(target=main, **args['app'])
-#ft.app(target=main, view=ft.WEB_BROWSER)
+
+if __name__ == "__main__":
+    ft.app(target=main, **args['app'])
+    #ft.app(target=main, view=ft.WEB_BROWSER)
