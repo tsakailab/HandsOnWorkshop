@@ -10,3 +10,7 @@ echo 'eval "$(pyenv init --path)"' >> ~/.bashrc
 source ~/.bashrc
 pyenv install 3.11
 pyenv global 3.11
+cd ~/HandsOnWorkshop/fletCVPR/
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
