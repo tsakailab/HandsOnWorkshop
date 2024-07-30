@@ -1,0 +1,4 @@
+ultralytics
+mediapipe
+flet
+auto-py-to-exe
