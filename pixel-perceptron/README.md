@@ -3,6 +3,13 @@
 8×8の手書き数字（digits）を使い、64個の重みを手動で調整する教材です。
 HTML / CSS / TypeScript + Vite。Reactや実行時のPythonは不要です。
 
+## すぐに試す
+
+[https://tsakailab.github.io/HandsOnWorkshop/pixel-perceptron/](https://tsakailab.github.io/HandsOnWorkshop/pixel-perceptron/) をブラウザで開いてください。  
+データをすべて内包しており、インストール・ログイン・ネット接続は不要です。  
+現在のChrome / Edge / Firefox / Safariを使用してください。
+
+
 ## 操作と計算
 
 - 左右のClassで0〜9を選択。初期状態は0と1。
